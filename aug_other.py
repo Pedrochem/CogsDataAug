@@ -8,9 +8,9 @@ NOUN = 'noun'
 MAX_PERMS = 3
 
 # train_file = open("Data/train_pos.tsv")
-train_file = open("Data/Other/dev.tsv")
+train_file = open("Data/Other/gen.tsv")
 
-out_file = open("Results/aug_dev.tsv", "w")
+out_file = open("Results/aug_gen.tsv", "w")
 
 p_file = open('permutation_vocab_src.txt')
 # p_file = open('perms.txt')
