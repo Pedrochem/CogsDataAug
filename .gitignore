@@ -1,1 +1,4 @@
 PastResults/*
+Results/*
+output.tsv
+*.tsv
