@@ -8,11 +8,11 @@ NOUN = 'noun'
 MAX_PERMS = 3
 
 # train_file = open("Data/train_pos.tsv")
-train_file = open("Data/Other/gen.tsv")
+train_file = open("data/gen.tsv")
 
-out_file = open("Results/aug_gen.tsv", "w")
+out_file = open("new_results/up_aug_gen.tsv", "w")
 
-p_file = open('permutation_vocab_src.txt')
+p_file = open('helper/permutation_vocab_src.txt')
 # p_file = open('perms.txt')
 # p_file = open('test_perms.txt')
 
@@ -31,28 +31,19 @@ def make_p_dic():
     return
 
 
-def modify_output(out,pos,w_class,word):
+def modify_output(out,pos,w_class,word,distribution):
+    if distribution == 'primitive\n': return out.replace(word,'?'+w_class+str(pos))
     if w_class == 'n':
-        split_word = ' ( x _ '+str(pos)+' )'
-        if split_word in out:
-            splits = out.split(split_word)
-            words_before = splits[0].split(' ')
-            words_before[-1] = '?n'
-            splits[0] = ' '.join(words_before)
-            new_out = split_word.join(splits)
-            return new_out
-        elif word in out: #case its a name
-            return out.replace(word,'?n')
-        else: return out 
+        new_string = out.replace(word,'?n'+str(pos)) 
+        return new_string
     elif w_class == 'v':        
         split_word = '( x _ '+str(pos)+' ,'
         splits = out.split(' ')
         for i,_ in enumerate(splits):
             if ' '.join(splits[i+3:i+8]) == split_word:
-                splits[i] = '?v'
+                splits[i] = '?v'+str(pos)
         new_out = ' '.join(splits)
         return new_out
-
     else: 
         return out
 
@@ -83,10 +74,10 @@ def write_permutated_rows(row,distribution):
     out_file.write('\n')
     return
 
-def make_output(words_to_be_permuted,utt,output,initial_row):
+def make_output(words_to_be_permuted,utt,output,initial_row,distribution,words_to_change_out):
     
-    for word,w_class,pos in words_to_be_permuted:
-        output = modify_output(output,pos,w_class,word)
+    for word,w_class,pos in words_to_change_out:
+        output = modify_output(output,pos,w_class,word,distribution)
 
     return output
 
@@ -98,16 +89,16 @@ def main():
         count_perm = 0
         pos_word = 0
         initial_row = formated_utt+'\t'+output
-        words_to_be_permuted = []
+        words_to_change_out = []
         for word_class in utt.split(' '):
             if '//' in word_class:  
                 word, w_class = word_class.split("//")
-                if count_perm <=3 and w_class in ('n','v') and (word,w_class) in p_dic.keys() and (str(pos_word) in output or word in output): # word to be permuted
-                    words_to_be_permuted.append((word,w_class,pos_word))
+                if w_class in ('n','v') and (word,w_class) in p_dic.keys() and (str(pos_word) in output or word in output): # word to be permuted
+                    words_to_change_out.append((word,w_class,pos_word))
                     count_perm+=1
                 pos_word+=1
 
-        final_out = make_output(words_to_be_permuted,formated_utt,output,initial_row)
+        final_out = make_output([],formated_utt,output,initial_row,distribution,words_to_change_out)
         final_utt_out = '\t'.join((formated_utt,final_out))
         write_permutated_rows(final_utt_out,distribution)
 

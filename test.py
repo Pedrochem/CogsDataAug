@@ -7,12 +7,12 @@ from dis import dis
 NOUN = 'noun'
 MAX_PERMS = 3
 
-train_file = open("Data/ct/gen.tsv")
-# train_file = open("Data/test_train.tsv")
+train_file = open("data/train_pos.tsv")
+# train_file = open("data/test_train.tsv")
 
-out_file = open("Results/ct/ct_aug_gen.tsv", "w")
+out_file = open("output2.tsv", "w")
 
-p_file = open('permutation_vocab_src.txt')
+p_file = open('helper/permutation_vocab_src.txt')
 # p_file = open('perms.txt')
 # p_file = open('test_perms.txt')
 
@@ -31,28 +31,27 @@ def make_p_dic():
     return
 
 
-def modify_output(out,pos,w_class,word):
+def modify_output(out,pos,w_class,word,distribution):
+    if distribution == 'primitive\n': return out.replace(word,'?'+w_class+str(pos))
+
+    if (w_class=='v'):
+        splits = out.split(' ')
+        for i,split in enumerate(splits):
+            if len(splits) >= i+2:
+                if split==word and splits[i+1] == '.':
+                    print('HERE')
+
     if w_class == 'n':
-        split_word = ' ( x _ '+str(pos)+' )'
-        if split_word in out:
-            splits = out.split(split_word)
-            words_before = splits[0].split(' ')
-            words_before[-1] = '?n'
-            splits[0] = ' '.join(words_before)
-            new_out = split_word.join(splits)
-            return new_out
-        elif word in out: #case its a name
-            return out.replace(word,'?n')
-        else: return out 
+        new_string = out.replace(word,'?n'+str(pos)) 
+        return new_string
     elif w_class == 'v':        
         split_word = '( x _ '+str(pos)+' ,'
         splits = out.split(' ')
         for i,_ in enumerate(splits):
             if ' '.join(splits[i+3:i+8]) == split_word:
-                splits[i] = '?v'
+                splits[i] = '?v'+str(pos)
         new_out = ' '.join(splits)
         return new_out
-
     else: 
         return out
 
@@ -67,12 +66,9 @@ def clean_utt(utt,p,flag):
     return permuted_utt
 
 def make_new_row(utt,output,word,w_class,pos,p):
-        rep_p = p+'//'+str(w_class)
-        rep_word = word+'//'+w_class
-        permuted_utt = utt.replace(rep_word,rep_p)
-        # splits = utt.split(' ')
-        # splits[pos] = p
-        # permuted_utt = (' ').join(splits)
+        splits = utt.split(' ')
+        splits[pos] = p
+        permuted_utt = (' ').join(splits)
         if output[-1]=='\n': output = output[:-1]
         final_row = ('\t').join((permuted_utt.strip(),output.strip()))
         return final_row
@@ -86,11 +82,11 @@ def write_permutated_rows(permuted_rows,distribution):
         out_file.write(final_row)
         out_file.write('\n')
 
-def make_permutations(words_to_be_permuted,utt,output,initial_row,original_row):
-    permuted_rows = [original_row]
+def make_permutations(words_to_be_permuted,utt,output,initial_row,distribution,words_to_change_out):
+    permuted_rows = [initial_row]
 
-    for word,w_class,pos in words_to_be_permuted:
-        output = modify_output(output,pos,w_class,word)
+    for word,w_class,pos in words_to_change_out:
+        output = modify_output(output,pos,w_class,word,distribution)
     
     for word,w_class,pos in words_to_be_permuted:
         temp_rows = []
@@ -107,22 +103,24 @@ def main():
     for row in train_file:
         row = row.lower()
         utt, output, distribution = row.split('\t')
+        words_to_change_out = []
         formated_utt = clean_utt(utt,'',False) 
         count_perm = 0
         pos_word = 0
         initial_row = formated_utt+'\t'+output
-        original_row = utt+'\t'+output
         words_to_be_permuted = []
         for word_class in utt.split(' '):
             if '//' in word_class:  
                 word, w_class = word_class.split("//")
-                if count_perm <=3 and w_class in ('n','v') and (word,w_class) in p_dic.keys() and (str(pos_word) in output or word in output): # word to be permuted
-                    words_to_be_permuted.append((word,w_class,pos_word))
-                    count_perm+=1
+                if  w_class in ('n','v') and (word,w_class) in p_dic.keys() and (str(pos_word) in output or word in output):
+                    words_to_change_out.append((word,w_class,pos_word))
+                    if count_perm <3:
+                        words_to_be_permuted.append((word,w_class,pos_word))
+                        count_perm+=1
                 pos_word+=1
 
-        permuted_rows = make_permutations(words_to_be_permuted,formated_utt,output,initial_row,original_row)
-        write_permutated_rows(permuted_rows,distribution)
+        permuted_rows = make_permutations(words_to_be_permuted,formated_utt,output,initial_row,distribution,words_to_change_out)
+        #write_permutated_rows(permuted_rows,distribution)
 
 
 make_p_dic()
