@@ -1,4 +1,0 @@
-('A', 'D') : A The a the
-('Abigail', 'N') : Abigail Emily Samuel Elizabeth
-('Addison', 'N') : Addison Ethan Grace Logan
-('Rose', 'N') : Rose Blue Green Vermelho

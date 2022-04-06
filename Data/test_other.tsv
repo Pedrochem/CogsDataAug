@@ -1,4 +1,0 @@
-( S ( NP ( DT A//D ) ( NN rose//N ) ) ( VP ( VBD was//V ) ( VP ( VBN helped//V ) ( PP ( IN by//I ) ( NP ( DT a//D ) ( NN dog//N ) ) ) ) ) ( . . ) )	"rose ( x _ 1 ) AND help . theme ( x _ 3 , x _ 1 ) AND help . agent ( x _ 3 , x _ 6 ) AND dog ( x _ 6 )"	in_distribution
-( S ( NP ( DT The//D ) ( NN sailor//N ) ) ( VP ( VBD dusted//V ) ( NP ( DT a//D ) ( NN boy//N ) ) ) ( . . ) )	"* sailor ( x _ 1 ) ; dust . agent ( x _ 2 , x _ 1 ) AND dust . theme ( x _ 2 , x _ 4 ) AND boy ( x _ 4 )"	in_distribution
-( S ( NP ( NNP Emma//N ) ) ( VP ( VBD rolled//V ) ( NP ( DT a//D ) ( NN teacher//N ) ) ) ( . . ) )	"roll . agent ( x _ 1 , Emma ) AND roll . theme ( x _ 1 , x _ 3 ) AND teacher ( x _ 3 )"	in_distribution
-( S ( NP ( NNP Evelyn//N ) ) ( VP ( VBD rolled//V ) ( NP ( DT the//D ) ( NN girl//N ) ) ) ( . . ) )	"* girl ( x _ 3 ) ; roll . agent ( x _ 1 , Evelyn ) AND roll . theme ( x _ 1 , x _ 3 )"	in_distribution

@@ -1,4 +1,0 @@
-a rose was helped by a dog 	?n ( x _ 1 ) and ?v . theme ( x _ 3 , x _ 1 ) and ?v . agent ( x _ 3 , x _ 6 ) and ?n ( x _ 6 )	in_distribution
-the sailor dusted a boy 	* ?n ( x _ 1 ) ; ?v . agent ( x _ 2 , x _ 1 ) and ?v . theme ( x _ 2 , x _ 4 ) and ?n ( x _ 4 )	in_distribution
-emma rolled a teacher 	?v . agent ( x _ 1 , ?n ) and ?v . theme ( x _ 1 , x _ 3 ) and ?n ( x _ 3 )	in_distribution
-evelyn rolled the girl 	* ?n ( x _ 3 ) ; ?v . agent ( x _ 1 , ?n ) and ?v . theme ( x _ 1 , x _ 3 )	in_distribution
