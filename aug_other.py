@@ -8,14 +8,8 @@ import re
 NOUN = 'noun'
 MAX_PERMS = 3
 
-# train_file = open("Data/train_pos.tsv")
-train_file = open("data/dev.tsv")
 
-out_file = open("new_results/up_aug_dev.tsv", "w")
 
-p_file = open('helper/permutation_vocab_src.txt')
-# p_file = open('perms.txt')
-# p_file = open('test_perms.txt')
 
 
 p_dic = {}
@@ -35,10 +29,15 @@ def make_p_dic():
 def modify_output(out,pos,w_class,word,distribution):
     if distribution == 'primitive\n': 
         return re.sub(r'\b%s\b' % word , '?'+w_class, out)
+   
+    # case its a proper name have to include pos
+    if w_class == 'n' and '( x _ '+str(pos) not in out:
+        return re.sub(r'\b%s\b' % word , '?p'+str(pos), out)
 
-    if w_class == 'n':
+    elif w_class == 'n':
         new_string = re.sub(r'\b%s\b' % word , '?n', out)
         return new_string
+    
     elif w_class == 'v':        
         split_word = '( x _ '+str(pos)+' ,'
         splits = out.split(' ')
@@ -47,8 +46,10 @@ def modify_output(out,pos,w_class,word,distribution):
                 splits[i] = '?v'
         new_out = ' '.join(splits)
         return new_out
+    
     else: 
         return out
+
 
 def clean_utt(utt,p,flag):
     splits = utt.split(' ')
@@ -104,6 +105,14 @@ def main():
         final_out = make_output([],formated_utt,output,initial_row,distribution,words_to_change_out)
         final_utt_out = '\t'.join((formated_utt,final_out))
         write_permutated_rows(final_utt_out,distribution)
+
+
+train_file = open("data/gen.tsv")
+
+out_file = open("results/aug/aug_gen.tsv", "w")
+
+p_file = open('helper/permutation_vocab_src.txt')
+
 
 
 make_p_dic()
