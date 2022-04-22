@@ -4,7 +4,6 @@ from collections import defaultdict
 from dis import dis
 import re
 
-from regex import W
 
 NOUN = 'noun'
 MAX_PERMS = 3
@@ -34,14 +33,14 @@ def make_p_dic():
 
 def modify_output(out,pos,w_class,word,distribution):
     if distribution == 'primitive\n': 
-        return re.sub(r'\b%s\b' % word , '?'+w_class, out)
+        return re.sub(r'\b%s\b' % word ,w_class, out)
    
     # case its a proper name have to include pos
-    if w_class == 'n' and '( x _ '+str(pos) not in out:
-        return re.sub(r'\b%s\b' % word , '?p'+str(pos), out)
+    if w_class == 'p':
+        return re.sub(r'\b%s\b' % word , 'p _ '+str(pos), out)
 
     elif w_class == 'n':
-        new_string = re.sub(r'\b%s\b' % word , '?n', out)
+        new_string = re.sub(r'\b%s\b' % word , 'n', out)
         return new_string
     
     elif w_class == 'v':        
@@ -49,7 +48,7 @@ def modify_output(out,pos,w_class,word,distribution):
         splits = out.split(' ')
         for i,_ in enumerate(splits):
             if ' '.join(splits[i+3:i+8]) == split_word:
-                splits[i] = '?v'
+                splits[i] = 'v'
         new_out = ' '.join(splits)
         return new_out
     
@@ -59,10 +58,9 @@ def modify_output(out,pos,w_class,word,distribution):
 def clean_utt(utt,p,flag):
     splits = utt.split(' ')
     permuted_utt = ''
-    for word in splits:
+    for i,word in enumerate(splits):
         if '//' in word or (word == p and flag):
-            #if '//' in word:
-                #word=word[:-3]
+            if splits[i-1] == 'nnp': word = word[:-1]+'p'
             permuted_utt += word + ' '
     return permuted_utt
 
@@ -91,7 +89,9 @@ def make_permutations(words_to_be_permuted,utt,output,initial_row,distribution,w
     
     for word,w_class,pos in words_to_be_permuted:
         temp_rows = []
-        for p in p_dic[(word,w_class)]:
+        aux = w_class 
+        if w_class == 'p': aux = 'n'
+        for p in p_dic[(word,aux)]:
             for row in permuted_rows:
                 utt, _= row.split('\t')
                 p_row = make_new_row(utt,output,word,w_class,pos,p)
@@ -110,10 +110,12 @@ def main():
         pos_word = 0
         initial_row = formated_utt+'\t'+output
         words_to_be_permuted = []
-        for word_class in utt.split(' '):
+        for word_class in formated_utt.split(' '):
             if '//' in word_class:  
                 word, w_class = word_class.split("//")
-                if  w_class in ('n','v') and (word,w_class) in p_dic.keys() and (str(pos_word) in output or word in output):
+                aux = w_class
+                if w_class == 'p': aux = 'n'
+                if  w_class in ('n','v','p') and (word,aux) in p_dic.keys()  and (str(pos_word) in output or word in output):
                     words_to_change_out.append((word,w_class,pos_word))
                     if count_perm <3:
                         words_to_be_permuted.append((word,w_class,pos_word))
