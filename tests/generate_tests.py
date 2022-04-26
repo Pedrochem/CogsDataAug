@@ -6,20 +6,60 @@ import re
 import random
 import nltk
 from nltk.stem.wordnet import WordNetLemmatizer
-from pattern.text.en import conjugate,PRESENT
 from regex import W
 import os
-# from pattern.text.en import conjugate
-# verb = "go"
+# from pattern.en import conjugate
+# from pattern.text.en import conjugate,PRESENT
 
-# conjugate(verb, 
-#      tense = "past",           # INFINITIVE, PRESENT, PAST, FUTURE
-#     person = 3,                # 1, 2, 3 or None
-#     number = "singular",       # SG, PL
-#       mood = "indicative",     # INDICATIVE, IMPERATIVE, CONDITIONAL, SUBJUNCTIVE
-#     aspect = "imperfective",   # IMPERFECTIVE, PERFECTIVE, PROGRESSIVE 
-#   negated = False)            # True or False
+from nltk.corpus import wordnet as wn
+def _morphy(word, pos,check_exceptions=True):
+    exceptions = wn._exception_map[pos]
+    if word in exceptions:
+        return exceptions[word]
+    else:
+        substitutions = wn.MORPHOLOGICAL_SUBSTITUTIONS[pos]
 
+        def apply_rules(forms):
+            return [
+                form[: -len(old)] + new
+                for form in forms
+                for old, new in substitutions
+                if form.endswith(old)
+            ]
+
+        def filter_forms(forms):
+            result = []
+            seen = set()
+            for form in forms:
+                if form in wn._lemma_pos_offset_map:
+                    if pos in wn._lemma_pos_offset_map[form]:
+                        if form not in seen:
+                            result.append(form)
+                            seen.add(form)
+            return result
+
+        # 0. Check the exception lists
+        if check_exceptions:
+            if word in exceptions:
+                return filter_forms([word] + exceptions[word])
+
+        # 1. Apply rules once to the input to get y1, y2, y3, etc.
+        forms = apply_rules([word])
+
+        # 2. Return all that are in the database (and check the original too)
+        results = filter_forms([word] + forms)
+        if results:
+            return results
+
+        # 3. If there are no matches, keep applying rules until we find a match
+        while forms:
+            forms = apply_rules(forms)
+            results = filter_forms(forms)
+            if results:
+                return results
+
+        # Return an empty list if we can't find anything
+        return []
 max_count = 100
 CONT = 0
  
@@ -44,7 +84,7 @@ def generate_output(inp,out):
     if out[-1] == '\"': out = out[:-1]
     splits =  out.split(' ')
     
-    if 'lambda' in out: return ''
+    if 'lambda' in out: return out
     for i,split in enumerate(splits): 
         v_flag = False
         if ''.join(splits[i:i+4]) == 'n(x_':
@@ -63,6 +103,14 @@ def generate_output(inp,out):
         word=word[:-3]
         if v_flag:
             word = WordNetLemmatizer().lemmatize(word,'v')
+            # word = conjugate(word, 
+            #         tense = "present",           # INFINITIVE, PRESENT, PAST, FUTURE
+            #         person = 1,                # 1, 2, 3 or None
+            #         number = "singular",       # SG, PL
+            #         mood = "indicative",     # INDICATIVE, IMPERATIVE, CONDITIONAL, SUBJUNCTIVE
+            #         aspect = "imperfective",   # IMPERFECTIVE, PERFECTIVE, PROGRESSIVE 
+            #         negated = False)           # True or False
+            # if word == 'fed': word = 'feed'
         splits[i] = word
 
     
@@ -82,17 +130,15 @@ def make_p_dic():
     return
 
 def modify_output(out,pos,w_class,word,distribution):
-    if distribution == 'primitive\n': 
-        return re.sub(r'\b%s\b' % word ,w_class, out)
-   
+ 
     # case its a proper name have to include pos
     if w_class == 'p':
         return re.sub(r'\b%s\b' % word , 'p _ '+str(pos), out)
 
-    elif w_class == 'n':
+    elif w_class == 'n' and str(pos) in out:
         new_string = re.sub(r'\b%s\b' % word , 'n', out)
         return new_string
-    
+
     elif w_class == 'v':        
         split_word = '( x _ '+str(pos)+' ,'
         splits = out.split(' ')
@@ -101,7 +147,6 @@ def modify_output(out,pos,w_class,word,distribution):
                 splits[i] = 'v'
         new_out = ' '.join(splits)
         return new_out
-    
     else: 
         return out
 
@@ -125,34 +170,34 @@ def make_new_row(utt,output,word,w_class,pos,p):
 def write_permutated_rows(original_row,permuted_rows,distribution,row_number):
     or_utt, or_output,or_distribution = original_row.split('\t')
     global CONT
-    if CONT < max_count and row_number>12:
-        n = random.randint(0,15)
-        if n <= 3:
-            if distribution[-1]!='\n': distribution+='\n'
-            out_file.write('Cont: '+str(CONT)+'\n')
-            #out_file.write('Row Number: '+str(row_number)+'\n')
-            out_file.write('Original input: '+or_utt+'\n')
-            out_file.write('Original output: '+or_output+'\n')
+    # if CONT < max_count and row_number>12:
+    #     n = random.randint(0,15)
+        # if n <= 3:
+    if distribution[-1]!='\n': distribution+='\n'
+    out_file.write('Cont: '+str(CONT)+'\n')
+    #out_file.write('Row Number: '+str(row_number)+'\n')
+    out_file.write('Original input: '+or_utt+'\n')
+    out_file.write('Original output: '+or_output+'\n')
 
-            first_row = permuted_rows[0]
-            utt, out = first_row.split('\t')
-            deterministic_out = generate_output(utt,out)
-            deterministic_out = deterministic_out.replace('  ',' ')
+    first_row = permuted_rows[0]
+    utt, out = first_row.split('\t')
+    deterministic_out = generate_output(utt,out)
+    deterministic_out = deterministic_out.replace('  ',' ')
 
-            # print('ut:',utt)
-            # print('out:',out)
-            out_file.write('Deterministic output: '+deterministic_out+'\n')
-            outputs_match = deterministic_out == or_output.lower()
-            out_file.write('Outputs match: '+str(outputs_match)+'\n')
-            out_file.write('Original distribution: '+or_distribution+'\n')
+    # print('ut:',utt)
+    # print('out:',out)
+    out_file.write('Deterministic output: '+deterministic_out+'\n')
+    outputs_match = deterministic_out == or_output.lower()
+    out_file.write('Outputs match: '+str(outputs_match)+'\n')
+    out_file.write('Original distribution: '+or_distribution+'\n')
 
-            for row in permuted_rows:
-                final_row = '\t'.join((row.strip(),distribution.strip()))
-                final_row = final_row.replace('\"','')
-                out_file.write(final_row)
-                out_file.write('\n')
-            out_file.write('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n\n')
-            CONT += 1
+    for row in permuted_rows:
+        final_row = '\t'.join((row.strip(),distribution.strip()))
+        final_row = final_row.replace('\"','')
+        out_file.write(final_row)
+        out_file.write('\n')
+    out_file.write('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n\n')
+    CONT += 1
     return
 
 def make_permutations(words_to_be_permuted,utt,output,initial_row,distribution,words_to_change_out):
@@ -193,7 +238,7 @@ def main():
                 word, w_class = word_class.split("//")
                 aux = w_class
                 if w_class == 'p': aux = 'n'
-                if  w_class in ('n','v','p') and (word,aux) in p_dic.keys()  and (str(pos_word) in output or word in output):
+                if  w_class in ('n','v','p') and (word,aux) in p_dic.keys()  and (str(pos_word) in output or (word in output and w_class == 'p')):
                     words_to_change_out.append((word,w_class,pos_word))
                     if count_perm <3:
                         words_to_be_permuted.append((word,w_class,pos_word))
