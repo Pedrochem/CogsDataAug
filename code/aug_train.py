@@ -23,7 +23,7 @@ p_dic = {}
 
 def make_p_dic():
     for row in p_file:
-        row = row.lower()
+        # row = row.lower()
         splits = row.split(':')
         key = ast.literal_eval(splits[0])
         value_splits = splits[1].split(' ')[1:]
@@ -34,14 +34,14 @@ def make_p_dic():
 def modify_output(out,pos,w_class,word,distribution):
     
     # case its a proper name have to include pos
-    if w_class == 'p':
+    if w_class == 'P':
         return re.sub(r'\b%s\b' % word , 'p _ '+str(pos), out)
 
-    elif w_class == 'n':
+    elif w_class == 'N':
         new_string = re.sub(r'\b%s\b' % word , 'n', out)
         return new_string
     
-    elif w_class == 'v':        
+    elif w_class == 'V':        
         split_word = '( x _ '+str(pos)+' ,'
         splits = out.split(' ')
         for i,_ in enumerate(splits):
@@ -58,7 +58,7 @@ def clean_utt(utt,p,flag):
     permuted_utt = ''
     for i,word in enumerate(splits):
         if '//' in word or (word == p and flag):
-            if splits[i-1] == 'nnp': word = word[:-1]+'p'
+            if splits[i-1] == 'NNP': word = word[:-1]+'P'
             permuted_utt += word + ' '
     return permuted_utt
 
@@ -88,7 +88,7 @@ def make_permutations(words_to_be_permuted,utt,output,initial_row,distribution,w
     for word,w_class,pos in words_to_be_permuted:
         temp_rows = []
         aux = w_class 
-        if w_class == 'p': aux = 'n'
+        if w_class == 'P': aux = 'N'
         for p in p_dic[(word,aux)]:
             for row in permuted_rows:
                 utt, _= row.split('\t')
@@ -100,7 +100,7 @@ def make_permutations(words_to_be_permuted,utt,output,initial_row,distribution,w
 
 def main():
     for row in train_file:
-        row = row.lower()
+        # row = row.lower()
         utt, output, distribution = row.split('\t')
         words_to_change_out = []
         formated_utt = clean_utt(utt,'',False) 
@@ -112,8 +112,8 @@ def main():
             if '//' in word_class:  
                 word, w_class = word_class.split("//")
                 aux = w_class
-                if w_class == 'p': aux = 'n'
-                if  w_class in ('n','v','p') and (word,aux) in p_dic.keys()  and (str(pos_word) in output or (word in output and w_class == 'p')):
+                if w_class == 'P': aux = 'N'
+                if  w_class in ('N','V','P') and (word,aux) in p_dic.keys()  and (str(pos_word) in output or (word in output and w_class == 'P')):
                     words_to_change_out.append((word,w_class,pos_word))
                     if count_perm <3:
                         words_to_be_permuted.append((word,w_class,pos_word))
