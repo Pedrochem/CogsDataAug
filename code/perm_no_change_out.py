@@ -113,10 +113,13 @@ def make_new_row(utt,output,word,w_class,pos,p):
 def write_permutated_rows(permuted_rows,distribution):
     if distribution[-1]!='\n': distribution+='\n'
     
+
     for row in permuted_rows:
         inp,out = row.split('\t')
         out = generate_output(inp,out)
-        row = ('\t').join((inp,out))
+        no_pos_inp = ''
+        no_pos_inp = re.sub('//[A-Z]', '', inp)
+        row = ('\t').join((no_pos_inp,out))
         final_row = '\t'.join((row.strip(),distribution.strip()))
         final_row = final_row.replace('\"','')
         out_file.write(final_row)

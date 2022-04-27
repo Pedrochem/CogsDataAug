@@ -17,7 +17,7 @@ p_dic = {}
 
 def make_p_dic():
     for row in p_file:
-        row = row.lower()
+        #row = row.lower()
         splits = row.split(':')
         key = ast.literal_eval(splits[0])
         value_splits = splits[1].split(' ')[1:]
@@ -27,23 +27,20 @@ def make_p_dic():
 
 
 def modify_output(out,pos,w_class,word,distribution):
-    if distribution == 'primitive\n': 
-        return re.sub(r'\b%s\b' % word , '?'+w_class, out)
-   
     # case its a proper name have to include pos
-    if w_class == 'n' and '( x _ '+str(pos) not in out:
-        return re.sub(r'\b%s\b' % word , '?p'+str(pos), out)
+    if w_class == 'P':
+        return re.sub(r'\b%s\b' % word , 'p _ '+str(pos), out)
 
-    elif w_class == 'n':
-        new_string = re.sub(r'\b%s\b' % word , '?n', out)
+    elif w_class == 'N':
+        new_string = re.sub(r'\b%s\b' % word , 'n', out)
         return new_string
     
-    elif w_class == 'v':        
+    elif w_class == 'V':        
         split_word = '( x _ '+str(pos)+' ,'
         splits = out.split(' ')
         for i,_ in enumerate(splits):
             if ' '.join(splits[i+3:i+8]) == split_word:
-                splits[i] = '?v'
+                splits[i] = 'v'
         new_out = ' '.join(splits)
         return new_out
     
@@ -54,10 +51,9 @@ def modify_output(out,pos,w_class,word,distribution):
 def clean_utt(utt,p,flag):
     splits = utt.split(' ')
     permuted_utt = ''
-    for word in splits:
+    for i,word in enumerate(splits):
         if '//' in word or (word == p and flag):
-            # if '//' in word:
-            #     word=word[:-3]
+            if splits[i-1] == 'NNP': word = word[:-1]+'P'
             permuted_utt += word + ' '
     return permuted_utt
 
@@ -87,17 +83,20 @@ def make_output(words_to_be_permuted,utt,output,initial_row,distribution,words_t
 
 def main():
     for row in train_file:
-        row = row.lower()
+        #row = row.lower()
         utt, output, distribution = row.split('\t')
         formated_utt = clean_utt(utt,'',False) 
         count_perm = 0
         pos_word = 0
         initial_row = formated_utt+'\t'+output
         words_to_change_out = []
-        for word_class in utt.split(' '):
+        for word_class in formated_utt.split(' '):
             if '//' in word_class:  
+
                 word, w_class = word_class.split("//")
-                if w_class in ('n','v') and (word,w_class) in p_dic.keys() and (str(pos_word) in output or word in output): # word to be permuted
+                aux = w_class
+                if w_class == 'P': aux = 'N'
+                if  w_class in ('N','V','P') and (word,aux) in p_dic.keys()  and (str(pos_word) in output or (word in output and w_class == 'P')):
                     words_to_change_out.append((word,w_class,pos_word))
                     count_perm+=1
                 pos_word+=1
@@ -107,9 +106,9 @@ def main():
         write_permutated_rows(final_utt_out,distribution)
 
 
-train_file = open("data/gen.tsv")
+train_file = open("data/test.tsv")
 
-out_file = open("results/aug/aug_gen.tsv", "w")
+out_file = open("results/aug/aug_test.tsv", "w")
 
 p_file = open('helper/permutation_vocab_src.txt')
 

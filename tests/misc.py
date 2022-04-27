@@ -1,13 +1,20 @@
-from nltk.stem import WordNetLemmatizer
-from nltk.corpus import wordnet 
+import stanza
+
+nlp = stanza.Pipeline(lang='en', processors='lemma')
+
+doc = nlp('He hoped that she saw what Luis hated')
+for sentence in doc.sentences:
+    for word in sentence.words:
+        print(word.text, word.lemma)
+
+# print(*[f'word: {word.text+" "}\tlemma: {word.lemma}' for sent in doc.sentences for word in sent.words], sep='\n')
+
+
+
+
+
+
 # pip install textblob
-lemmatizer = WordNetLemmatizer()
-from textblob import TextBlob, Word
-
-from nltk.corpus import wordnet as wn
-print(wn._morphy('hated', 'v')[0])
-  
-
-#print("Saw :", lemmatizer.lemmatize("saw"))
-# print("Hoped :", lemmatizer.lemmatize("hoped", wordnet.VERB))
-# print("Hated :", lemmatizer.lemmatize("hated", wordnet.VERB))
+# from textblob import TextBlob, Word
+# from nltk.corpus import wordnet as wn
+# print(wn._morphy('hated', 'v')[0])
