@@ -4,65 +4,15 @@ from collections import defaultdict
 from dis import dis
 import re
 import random
-import nltk
-from nltk.stem.wordnet import WordNetLemmatizer
 from regex import W
 import os
-# from pattern.en import conjugate
-# from pattern.text.en import conjugate,PRESENT
+import stanza
 
-from nltk.corpus import wordnet as wn
-def _morphy(word, pos,check_exceptions=True):
-    exceptions = wn._exception_map[pos]
-    if word in exceptions:
-        return exceptions[word]
-    else:
-        substitutions = wn.MORPHOLOGICAL_SUBSTITUTIONS[pos]
+nlp = stanza.Pipeline(lang='en', processors='tokenize,mwt,pos,lemma')
 
-        def apply_rules(forms):
-            return [
-                form[: -len(old)] + new
-                for form in forms
-                for old, new in substitutions
-                if form.endswith(old)
-            ]
-
-        def filter_forms(forms):
-            result = []
-            seen = set()
-            for form in forms:
-                if form in wn._lemma_pos_offset_map:
-                    if pos in wn._lemma_pos_offset_map[form]:
-                        if form not in seen:
-                            result.append(form)
-                            seen.add(form)
-            return result
-
-        # 0. Check the exception lists
-        if check_exceptions:
-            if word in exceptions:
-                return filter_forms([word] + exceptions[word])
-
-        # 1. Apply rules once to the input to get y1, y2, y3, etc.
-        forms = apply_rules([word])
-
-        # 2. Return all that are in the database (and check the original too)
-        results = filter_forms([word] + forms)
-        if results:
-            return results
-
-        # 3. If there are no matches, keep applying rules until we find a match
-        while forms:
-            forms = apply_rules(forms)
-            results = filter_forms(forms)
-            if results:
-                return results
-
-        # Return an empty list if we can't find anything
-        return []
 max_count = 100
 CONT = 0
- 
+differents_words = set()
 NOUN = 'noun'
 MAX_PERMS = 3
 
@@ -102,15 +52,8 @@ def generate_output(inp,out):
         word = inp_splits[pos]
         word=word[:-3]
         if v_flag:
-            word = WordNetLemmatizer().lemmatize(word,'v')
-            # word = conjugate(word, 
-            #         tense = "present",           # INFINITIVE, PRESENT, PAST, FUTURE
-            #         person = 1,                # 1, 2, 3 or None
-            #         number = "singular",       # SG, PL
-            #         mood = "indicative",     # INDICATIVE, IMPERATIVE, CONDITIONAL, SUBJUNCTIVE
-            #         aspect = "imperfective",   # IMPERFECTIVE, PERFECTIVE, PROGRESSIVE 
-            #         negated = False)           # True or False
-            # if word == 'fed': word = 'feed'
+            doc = nlp(word)
+            word = doc.sentences[0].words[0].lemma
         splits[i] = word
 
     
@@ -188,6 +131,11 @@ def write_permutated_rows(original_row,permuted_rows,distribution,row_number):
     # print('out:',out)
     out_file.write('Deterministic output: '+deterministic_out+'\n')
     outputs_match = deterministic_out == or_output.lower()
+    if not outputs_match:
+        for word in or_output.split(' '):
+            if word not in deterministic_out:
+                differents_words.add(word)
+
     out_file.write('Outputs match: '+str(outputs_match)+'\n')
     out_file.write('Original distribution: '+or_distribution+'\n')
 
@@ -256,7 +204,7 @@ p_file.close()
 train_file.close()
 out_file.close()
 original_file.close()
-
+print('Different words:',differents_words)
 
 
 

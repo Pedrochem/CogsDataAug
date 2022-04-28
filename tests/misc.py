@@ -1,15 +1,11 @@
 import stanza
-
-nlp = stanza.Pipeline(lang='en', processors='lemma')
-
-doc = nlp('He hoped that she saw what Luis hated')
-for sentence in doc.sentences:
-    for word in sentence.words:
-        print(word.text, word.lemma)
-
-# print(*[f'word: {word.text+" "}\tlemma: {word.lemma}' for sent in doc.sentences for word in sent.words], sep='\n')
+from stanza.models.common.doc import Document
 
 
+nlp = stanza.Pipeline(lang='en', processors='tokenize,lemma', lemma_pretagged=True, tokenize_pretokenized=True)
+pp = Document([[{'id': 1, 'text': 'snoozed', 'upos': 'VERB'}]])
+doc = nlp(pp)
+print(doc)
 
 
 
