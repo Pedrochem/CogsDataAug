@@ -3,6 +3,7 @@ import ast
 from collections import defaultdict
 from dis import dis
 import re
+from aug_train import *
 
 
 NOUN = 'noun'
@@ -10,80 +11,26 @@ MAX_PERMS = 3
 
 
 
-
-
-p_dic = {}
-
-
-def make_p_dic():
-    for row in p_file:
-        #row = row.lower()
-        splits = row.split(':')
-        key = ast.literal_eval(splits[0])
-        value_splits = splits[1].split(' ')[1:]
-        value_splits[-1] = value_splits[-1].rstrip("\n")
-        p_dic[key] = value_splits[:-1]
-    return
-
-
-def modify_output(out,pos,w_class,word,distribution):
-    # case its a proper name have to include pos
-    if w_class == 'P':
-        return re.sub(r'\b%s\b' % word , 'p _ '+str(pos), out)
-
-    elif w_class == 'N':
-        new_string = re.sub(r'\b%s\b' % word , 'n', out)
-        return new_string
-    
-    elif w_class == 'V':        
-        split_word = '( x _ '+str(pos)+' ,'
-        splits = out.split(' ')
-        for i,_ in enumerate(splits):
-            if ' '.join(splits[i+3:i+8]) == split_word:
-                splits[i] = 'v'
-        new_out = ' '.join(splits)
-        return new_out
-    
-    else: 
-        return out
-
-
-def clean_utt(utt,p,flag):
-    splits = utt.split(' ')
-    permuted_utt = ''
-    for i,word in enumerate(splits):
-        if '//' in word or (word == p and flag):
-            if splits[i-1] == 'NNP': word = word[:-1]+'P'
-            permuted_utt += word + ' '
-    return permuted_utt
-
-def make_new_row(utt,output,word,w_class,pos,p):
-        splits = utt.split(' ')
-        splits[pos] = p+'//'+w_class
-        permuted_utt = (' ').join(splits)
-        #permuted_utt = clean_utt(permuted_utt,p,True)
-        if output[-1]=='\n': output = output[:-1]
-        final_row = ('\t').join((permuted_utt.strip(),output.strip()))
-        return final_row
+def make_output(output,distribution,words_to_change_out):
+    for word,w_class,pos in words_to_change_out:
+        output = modify_output(output,pos,w_class,word,distribution)
+    output = final_clean_output(output)
+    return output
 
 def write_permutated_rows(row,distribution):
     if distribution[-1]!='\n': distribution+='\n'
+
+    inp,out  = row.split('\t')
+    inp = inp.replace('//',' ')
+    row = '\t'.join((inp,out))
     final_row = '\t'.join((row.strip(),distribution.strip()))
     final_row = final_row.replace('\"','')
     out_file.write(final_row)
     out_file.write('\n')
-    return
-
-def make_output(words_to_be_permuted,utt,output,initial_row,distribution,words_to_change_out):
-    
-    for word,w_class,pos in words_to_change_out:
-        output = modify_output(output,pos,w_class,word,distribution)
-
-    return output
 
 def main():
+    p_dic = make_p_dic()
     for row in train_file:
-        #row = row.lower()
         utt, output, distribution = row.split('\t')
         formated_utt = clean_utt(utt,'',False) 
         count_perm = 0
@@ -92,7 +39,6 @@ def main():
         words_to_change_out = []
         for word_class in formated_utt.split(' '):
             if '//' in word_class:  
-
                 word, w_class = word_class.split("//")
                 aux = w_class
                 if w_class == 'P': aux = 'N'
@@ -101,7 +47,8 @@ def main():
                     count_perm+=1
                 pos_word+=1
 
-        final_out = make_output([],formated_utt,output,initial_row,distribution,words_to_change_out)
+        final_out = make_output(output,distribution,words_to_change_out)
+        formated_utt = formated_utt.replace('//',' ')
         final_utt_out = '\t'.join((formated_utt,final_out))
         write_permutated_rows(final_utt_out,distribution)
 
@@ -113,12 +60,14 @@ out_file = open("results/aug/aug_test.tsv", "w")
 p_file = open('helper/permutation_vocab_src.txt')
 
 
+files = ['test','dev','gen']
+for f in files:
+    train_file = open("data/"+f+".tsv")
+    out_file = open("results/aug/aug_"+f+".tsv", "w")
+    main()
+    train_file.close()
+    out_file.close()
 
-make_p_dic()
-main()
-p_file.close()
-train_file.close()
-out_file.close()
 
 
 

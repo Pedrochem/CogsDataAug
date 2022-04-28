@@ -13,32 +13,38 @@ train_file = open("data/train_pos.tsv")
 
 out_file = open("results/aug/aug_train.tsv", "w")
 
-p_file = open('helper/permutation_vocab_src.txt')
 # p_file = open('perms.txt')
 # p_file = open('test_perms.txt')
 
-
-p_dic = {}
+def final_clean_output(out):
+    splits = out.split(' ')
+    for i,word in enumerate(splits):
+        if word.isdigit():
+            splits[i] = str(int(word)*2)
+    return ' '.join(splits)
+   
 
 
 def make_p_dic():
+    p_file = open('helper/permutation_vocab_src.txt')
+    p_dic = {}
     for row in p_file:
-        # row = row.lower()
         splits = row.split(':')
         key = ast.literal_eval(splits[0])
         value_splits = splits[1].split(' ')[1:]
         value_splits[-1] = value_splits[-1].rstrip("\n")
         p_dic[key] = value_splits[:-1]
-    return
+    p_file.close()
+    return p_dic
 
 def modify_output(out,pos,w_class,word,distribution):
     
     # case its a proper name have to include pos
     if w_class == 'P':
-        return re.sub(r'\b%s\b' % word , 'p _ '+str(pos), out)
+        return re.sub(r'\b%s\b' % word , 'P _ '+str(pos), out)
 
     elif w_class == 'N':
-        new_string = re.sub(r'\b%s\b' % word , 'n', out)
+        new_string = re.sub(r'\b%s\b' % word , 'N', out)
         return new_string
     
     elif w_class == 'V':        
@@ -46,7 +52,7 @@ def modify_output(out,pos,w_class,word,distribution):
         splits = out.split(' ')
         for i,_ in enumerate(splits):
             if ' '.join(splits[i+3:i+8]) == split_word:
-                splits[i] = 'v'
+                splits[i] = 'V'
         new_out = ' '.join(splits)
         return new_out
     
@@ -72,19 +78,22 @@ def make_new_row(utt,output,word,w_class,pos,p):
 
 def write_permutated_rows(permuted_rows,distribution):
     if distribution[-1]!='\n': distribution+='\n'
-    
+
     for row in permuted_rows:
+        inp,out  =row.split('\t')
+        inp = inp.replace('//',' ')
+        row = '\t'.join((inp,out))
         final_row = '\t'.join((row.strip(),distribution.strip()))
         final_row = final_row.replace('\"','')
         out_file.write(final_row)
         out_file.write('\n')
 
-def make_permutations(words_to_be_permuted,utt,output,initial_row,distribution,words_to_change_out):
+def make_permutations(words_to_be_permuted,utt,output,initial_row,distribution,words_to_change_out,p_dic):
     permuted_rows = [initial_row]
 
     for word,w_class,pos in words_to_change_out:
         output = modify_output(output,pos,w_class,word,distribution)
-    
+    output = final_clean_output(output)
     for word,w_class,pos in words_to_be_permuted:
         temp_rows = []
         aux = w_class 
@@ -99,6 +108,7 @@ def make_permutations(words_to_be_permuted,utt,output,initial_row,distribution,w
     return permuted_rows
 
 def main():
+    p_dic = make_p_dic()
     for row in train_file:
         # row = row.lower()
         utt, output, distribution = row.split('\t')
@@ -120,13 +130,11 @@ def main():
                         count_perm+=1
                 pos_word+=1
 
-        permuted_rows = make_permutations(words_to_be_permuted,formated_utt,output,initial_row,distribution,words_to_change_out)
+        permuted_rows = make_permutations(words_to_be_permuted,formated_utt,output,initial_row,distribution,words_to_change_out,p_dic)
         write_permutated_rows(permuted_rows,distribution)
 
 
-make_p_dic()
 main()
-p_file.close()
 train_file.close()
 out_file.close()
 
