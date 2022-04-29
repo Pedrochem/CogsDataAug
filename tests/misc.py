@@ -3,7 +3,7 @@ from stanza.models.common.doc import Document
 
 
 nlp = stanza.Pipeline(lang='en', processors='tokenize,lemma', lemma_pretagged=True, tokenize_pretokenized=True)
-pp = Document([[{'id': 1, 'text': 'snoozed', 'upos': 'VERB'}]])
+pp = Document([[{'id': 1, 'text': 'shattered', 'upos': 'VBD'}]])
 doc = nlp(pp)
 print(doc)
 
