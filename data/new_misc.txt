@@ -1,0 +1,30 @@
+# PP Recursion (Accuracy: 0.041)
+# Depth generalization: PP modifiers
+
+Original inputs:
+( S ( NP ( DT A//D ) ( NN cake//N ) ) ( VP ( VBD was//V ) ( VP ( VBN forwarded//V ) ( PP ( IN to//I ) ( NP ( NNP Levi//N ) ) ) ( PP ( IN by//I ) ( NP ( NNP Charlotte//N ) ) ) ) ) ( . . ) )	"cake ( x _ 1 ) AND forward . theme ( x _ 3 , x _ 1 ) AND forward . recipient ( x _ 3 , Levi ) AND forward . agent ( x _ 3 , Charlotte )"	
+( S ( NP ( DT The//D ) ( NN cookie//N ) ) ( VP ( VBD was//V ) ( VP ( VBN passed//V ) ( PP ( IN to//I ) ( NP ( NNP Emma//N ) ) ) ) ) ( . . ) )	"* cookie ( x _ 1 ) ; pass . theme ( x _ 3 , x _ 1 ) AND pass . recipient ( x _ 3 , Emma )"	
+
+Generated input:
+( S ( NP ( DT The//D ) ( NN cookie//N ) ) ( VP ( VBD was//V ) ( VP ( VBN passed//V ) ( PP ( IN to//I ) ( NP ( NNP Levi//N ) ) ) ( PP ( IN by//I ) ( NP ( NNP Charlotte//N ) ) ) ) ) ( . . ) )		"* cookie ( x _ 1 ) ; pass . theme ( x _ 3 , x _ 1 ) AND pass . recipient ( x _ 3 , Levi )"	AND pass . agent ( x _ 3 , Charlotte )" 
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# prim_to_obj_proper (Accuracy: 0.574)
+# Primitive noun → Object (proper noun) 
+
+Original inputs:
+( NP ( NNP Paula//N ) )	Paula	
+( S ( NP ( DT A//D ) ( NN chicken//N ) ) ( VP ( VBD helped//V ) ( NP ( DT the//D ) ( NN cake//N ) ) ) ( . . ) )	"* cake ( x _ 4 ) ; chicken ( x _ 1 ) AND help . agent ( x _ 2 , x _ 1 ) AND help . theme ( x _ 2 , x _ 4 )"	
+
+
+Generated input:
+( S ( NP ( DT A//D ) ( NN chicken//N ) ) ( VP ( VBD helped//V ) ( NP ( NNP Paula//N ) )  ) ( . . ) )	"* cake ( x _ 4 ) ; chicken ( x _ 1 ) AND help . agent ( x _ 2 , x _ 1 ) AND help . theme ( x _ 2 , Paula )"	
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# gen/accuracy/subj_to_obj_proper (Accuracy: 0.571)
+# Subject → Object (proper noun) 
+
+Original inputs: 
+
+( S ( NP ( NNP Emma//N ) ) ( VP ( VBD wired//V ) ( NP ( DT a//D ) ( NN girl//N ) ) ( NP ( DT the//D ) ( NN cake//N ) ) ) ( . . ) )	"* cake ( x _ 5 ) ; wire . agent ( x _ 1 , Emma ) AND wire . recipient ( x _ 1 , x _ 3 ) AND wire . theme ( x _ 1 , x _ 5 ) AND girl ( x _ 3 )"	in_distribution
+( S ( NP ( DT A//D ) ( NN chicken//N ) ) ( VP ( VBD helped//V ) ( NP ( DT the//D ) ( NN cake//N ) ) ) ( . . ) )	"* cake ( x _ 4 ) ; chicken ( x _ 1 ) AND help . agent ( x _ 2 , x _ 1 ) AND help . theme ( x _ 2 , x _ 4 )"	

@@ -7,9 +7,12 @@ import re
 import random
 from regex import W
 import os
-import stanza
+import spacy
+from spacy.lemmatizer import Lemmatizer, ADJ, NOUN, VERB
+nlp = spacy.load('en')
 
-nlp = stanza.Pipeline(lang='en', processors='tokenize,mwt,pos,lemma')
+lemmatizer = nlp.vocab.morphology.lemmatizer
+
 
 max_count = 100
 CONT = 0
@@ -51,8 +54,7 @@ def generate_output(inp,out):
         word = inp_splits[int(pos/2)]
         word=word[:-3]
         if v_flag:
-            doc = nlp(word)
-            word = doc.sentences[0].words[0].lemma
+            word = lemmatizer(word, 'VERB')[0]
         splits[i] = word
 
     new_out = ' '.join(splits)
