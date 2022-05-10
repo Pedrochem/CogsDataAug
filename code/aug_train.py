@@ -134,9 +134,10 @@ def main():
         write_permutated_rows(permuted_rows,distribution)
 
 
-main()
-train_file.close()
-out_file.close()
+if __name__ == '__main__':
+    main()
+    train_file.close()
+    out_file.close()
 
 
 
