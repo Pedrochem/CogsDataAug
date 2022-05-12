@@ -7,12 +7,7 @@ Finished:
 
     3) Substitution of NN (nouns) for NNP (proper nouns) *that are not inside PPs*
 
-        ( S ( NP ( NNP Liam//N ) ) ( VP ( VBD gave//V ) ( NP ( DT a//D ) ( NN teacher//N ) ) ( NP ( NP ( DT the//D ) ( NN lollipop//N ) ) ( PP ( IN beside//I ) ( NP ( DT the//D ) ( NN bike//N ) ) ) ) ) ( . . ) )	* lollipop ( x _ 5 ) ; * bike ( x _ 8 ) ; give . agent ( x _ 1 , Liam ) AND give . recipient ( x _ 1 , x _ 3 ) AND give . theme ( x _ 1 , x _ 5 ) AND teacher ( x _ 3 ) AND lollipop . nmod . beside ( x _ 5 , x _ 8 )
-        ( S ( NP ( NNP Jayden//N ) ) ( VP ( VBD awarded//V ) ( NP ( NNP Emma//N ) ) ( NP ( NP ( DT the//D ) ( NN box//N ) ) ( PP ( IN beside//I ) ( NP ( DT the//D ) ( NN table//N ) ) ) ) ) ( . . ) )	* box ( x _ 4 ) ; * table ( x _ 7 ) ; award . agent ( x _ 1 , Jayden ) AND award . recipient ( x _ 1 , Emma ) AND award . theme ( x _ 1 , x _ 4 ) AND box . nmod . beside ( x _ 4 , x _ 7 )
-        -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        ( S ( NP ( NNP Liam//N ) ) ( VP ( VBD gave//V ) ( NP ( NNP Jayden//N ) ) ( NP ( NP ( DT the//D ) ( NN lollipop//N ) ) ( PP ( IN beside//I ) ( NP ( DT the//D ) ( NN bike//N ) ) ) ) ) ( . . ) )	"* lollipop ( x _ 4 ) ; * bike ( x _ 7 ) ; give . agent ( x _ 1 , Liam ) AND give . recipient ( x _ 1 , Jayden ) AND give . theme ( x _ 1 , x _ 4 ) lollipop . nmod . beside ( x _ 4 , x _ 7 )"	in_distribution
-
-
+  
 
 ================================================================================================================================================================================================================================================================================================================================================================================================================================================
 
@@ -35,3 +30,7 @@ Finished:
     - Normal data accuracy: 0.80
     - Words permutation accuracy: 0.81
     - Subsutructure substituion accuracy: 0.83
+
+
+For 10.000 extra inputs
+{'NN_NN': 5958, 'NNP_NNP': 1108, 'NN_NNP': 3636}

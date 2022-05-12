@@ -34,7 +34,7 @@ def get_np(inp,out):
             if brackets == 0:
                 np = '( ' + ' '.join(splits[np_pos:i+1])
                 
-                nps_lst.append((np,np_pos))
+                nps_lst.append(np)
                 np_found = False
     return nps_lst
 
@@ -44,10 +44,20 @@ with open(IN_FILE) as f:
     read_tsv = csv.reader(f, delimiter='\t')
     lst = 0
     inps = set()
+    conts = set()
     for row in read_tsv:
         inp,out,dist = row
-        if '*' not in out and ' the ' in inp.lower():
-            lst+=1
-            inps.add(inp)
-    print(lst)
-    print(inps)
+        for np in get_np(inp,out):
+            if ' NN ' in np:
+                cont = 0
+                for word in np.split(' '):
+                    if '//' in word:
+                        cont+=1
+                conts.add(cont)
+    
+        # if '*' not in out and ' the ' in inp.lower():
+        #     lst+=1
+        #     inps.add(inp)
+    print(conts)
+    # print(lst)
+    # print(inps)
