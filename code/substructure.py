@@ -4,8 +4,8 @@ import random
 from re import L, S
 from aug_train import final_clean_output
 
-IN_FILE = 'data/DATA_MISC.tsv'
-MAX_ADDED_LINES = 10
+IN_FILE = 'data/train_pos.tsv'
+MAX_ADDED_LINES = 10000
 CLASSES_NN = ['NN','DT']
 
 OUT_FILE = open('results/substructure/train.tsv', 'w')
@@ -70,8 +70,10 @@ def write_new_row(inp,out,dist,old_strategy,strategy):
             if inp_splits[i-1] == 'NNP': word = word[:-1]+'P'
             final_inp += word.replace('//',' ') + ' '
     final_out = final_clean_output(out)
-    final_row = cat+' - '+ '\t'.join((final_inp,final_out,dist))
-    
+    # final_row = cat+' - '+ '\t'.join((final_inp,final_out,dist))
+    final_row = '\t'.join((final_inp,final_out,dist))
+
+
     # OUT_FILE.write('\t'.join((inp,out))+'\n')
     # OUT_FILE.write('\t'.join((s_inp,s_out))+'\n')
     # OUT_FILE.write('-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n')
@@ -239,6 +241,8 @@ def modify_out(inp,out, np, s_np,strategy):
             j = 0
             for x,word in enumerate(out_splits[i:]):
                 word_pos,end_ind,final_word = get_outsplits_word_info(out_splits[i+j:])
+                if word_pos == None:
+                    return None,strategy
                 if word_pos > subs_pos:
                     new_out_splits = out_splits[:last_end_ind] + (subs_word+' ( x _ '+ str(subs_pos)+' ) AND').split(' ') + out_splits[last_end_ind:]
                     break
@@ -312,10 +316,9 @@ def main():
                     new_inp = new_inp.replace(np, s_np)
 
             
-            if new_inp != None and new_out != None and old_strategy['NNP_NN'] != strategy['NNP_NN']:
+            if new_inp != None and new_out != None:
                 new_inp = validate_new_inp(new_inp)
                 write_new_row(new_inp,new_out,dist,old_strategy,strategy)
-                #added_rows.add(inp)
                 cont+=1
 
 
