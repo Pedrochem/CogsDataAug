@@ -35,3 +35,13 @@ Generated input:
 
 
 
+========================================================================================================================================================================================================================================================================
+
+1) Map pps to their outs
+2) Get random sentence and check for missing outs (v.agent, v.recipient, n.nmod,...)
+3) Get a random number for additions, and add extra pps to input
+
+
+====
+
+1) locate last verb complement, and add coresponding out
