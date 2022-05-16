@@ -33,3 +33,5 @@ Generated input:
 ( S ( NP ( DT A//D ) ( NN chicken//N ) ) ( VP ( VBD helped//V ) ( NP ( NNP Emma//N ) )  ) ( . . ) )	"* cake ( x _ 4 ) ; chicken ( x _ 1 ) AND help . agent ( x _ 2 , x _ 1 ) AND help . theme ( x _ 2 , Emma )"	
 
 
+
+

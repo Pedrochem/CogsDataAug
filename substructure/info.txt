@@ -1,0 +1,5 @@
+ PP ( IN to//I ) -> V. recipient
+ PP ( IN by//I ) -> V. agent
+ PP ( IN beside//I ) -> N . nmod . beside ( x _ 4 , x _ 7 ) 
+ PP ( IN in//I ) -> N . nmod . in ( x _ 4 , x _ 7 )
+ PP ( IN on//I ) -> N . nmod . on ( x _ 4 , x _ 7 )

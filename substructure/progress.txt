@@ -5,32 +5,11 @@ Finished:
 
     2) Basic substituion of NNP by other NNP
 
-    3) Substitution of NN (nouns) for NNP (proper nouns) *that are not inside PPs*
+    3) Substitution of NN (nouns) for NNP (proper nouns) 
 
+    4) Substitution of NNP (proper nouns) for NN (nouns) 
+
+    5) Addition of PPs -- (Todo)
   
 
-================================================================================================================================================================================================================================================================================================================================================================================================================================================
 
-    - prim_to_obj_proper 
-    - Primitive noun → Object (Proper noun) 
-    - Normal data accuracy: 0.574
-    - Words permutation accuracy: 0.57
-    - Subsutructure substituion accuracy: 0.913
-
-
-
-    - subj_to_obj_proper
-    - Subject → Object (proper noun)
-    - Normal data accuracy: 0.547 
-    - Words permutation accuracy: 0.571
-    - Subsutructure substituion accuracy: 0.87
-
-
-    - gen accuracy total
-    - Normal data accuracy: 0.80
-    - Words permutation accuracy: 0.81
-    - Subsutructure substituion accuracy: 0.83
-
-
-For 10.000 extra inputs
-{'NN_NN': 5958, 'NNP_NNP': 1108, 'NN_NNP': 3636}

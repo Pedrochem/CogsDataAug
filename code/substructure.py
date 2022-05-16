@@ -8,7 +8,7 @@ IN_FILE = 'data/train_pos.tsv'
 MAX_ADDED_LINES = 10000
 CLASSES_NN = ['NN','DT']
 
-OUT_FILE = open('results/substructure/train.tsv', 'w')
+OUT_FILE = open('results/substructure/res_no_pp_restriction.tsv', 'w')
 
 def get_outsplits_word_info(outsplits):
     pos = None
@@ -104,17 +104,18 @@ def get_np(inp,out):
     pp_brackets = None
 
     for i,word in enumerate(splits):
-        if word == 'PP':
-            pp_found = True
-            pp_brackets = 1
-        if pp_found:
-            if word == '(':
-                pp_brackets += 1
-            elif word == ')':
-                pp_brackets -= 1
-            if pp_brackets == 0:
-                pp_found = False
-        if word == 'NP' and not pp_found:
+        # if word == 'PP':
+        #     pp_found = True
+        #     pp_brackets = 1
+        # if pp_found:
+        #     if word == '(':
+        #         pp_brackets += 1
+        #     elif word == ')':
+        #         pp_brackets -= 1
+        #     if pp_brackets == 0:
+        #         pp_found = False
+        # if word == 'NP' and not pp_found:
+        if word == 'NP':
             np_found = True
             np_pos = i
             brackets = 1
@@ -186,7 +187,7 @@ def modify_out(inp,out, np, s_np,strategy):
         subs_word_pos = int(get_word_pos(inp,subs_word))
         if 'DT' in np_splits:
             for i, word in enumerate(out_splits):
-                if word == subs_word[:-3]:
+                if word.lower() == subs_word[:-3].lower():
                     if out_splits[i-1] in ['*',';','AND']: 
                         new_out_splits = out_splits[:i-1]
                     else:
@@ -265,7 +266,7 @@ def modify_out(inp,out, np, s_np,strategy):
 
 
     
-    return out,strategy
+    return None,strategy
     
 
 
