@@ -8,6 +8,8 @@ IN_FILE = 'data/train_pos.tsv'
 MAX_ADDED_LINES = 10000
 CLASSES_NN = ['NN','DT']
 VERB_PPS = ['by','to']
+VERBS_COMP = ['agent','theme','recipient','xcomp','ccomp']
+
 NOUN_PPS = ['in','beside','on']
 OUT_FILE = open('results/substructure/res_no_pp_restriction.tsv', 'w')
 
@@ -23,7 +25,6 @@ def get_outsplits_word_info(outsplits):
             return pos,ind,False
     
     return pos,None,True
-
 
 def validate_nn(nn_splits):
     'Returns true only if nn is composed by 2 words (article + noun)'
@@ -80,11 +81,9 @@ def write_new_row(inp,out,dist,old_strategy,strategy):
     OUT_FILE.write(final_row+'\n')
     # OUT_FILE.write('\n==================================================================================================================================================================================================================================================================================================================================================================\n')
 
-
 def get_pps(inp,dic):
     splits = inp.split(' ')
     brackets = None
-    pps = set()
     pp_found = False
     
     for i,word in enumerate(splits):
@@ -99,7 +98,6 @@ def get_pps(inp,dic):
                 brackets-=1
             if brackets == 0:
                 pp = '( ' + ' '.join(splits[pp_pos:i+1])
-                pps.add(pp)
                 pp_found = False
                 
                 if 'to//I' in pp:
@@ -114,7 +112,7 @@ def get_pps(inp,dic):
                     dic['on'].add(pp)
 
 
-    return pps,dic
+    return dic
 
 def get_word_pos(inp,word):
     splits = inp.split(' ')
@@ -274,7 +272,15 @@ def add_pp_verb_inp(inp,pp_type,pp):
 
     
 
-def get_possible_pps(out):
+def get_possible_pps_and_verb(out):
+    splits = out.split(' ')
+    verbs = set()
+    for i,word in enumerate(splits):
+        if word in VERBS_COMP:
+            verbs.add(splits[i-2])
+    if len(verbs) > 1: return ([],[]) # Todo: make it work for outputs with more than one verb
+
+
     dic = {'to':'recipient',
             'by':'agent',
             'beside':'beside',
@@ -288,7 +294,7 @@ def get_possible_pps(out):
             possible_pps.remove(key)
     
     random.shuffle(possible_pps)
-    return possible_pps
+    return possible_pps,verbs.pop()
 
 def get_verb(inp):
     for word in inp.split(' '):
@@ -296,15 +302,74 @@ def get_verb(inp):
             verb = word
     return verb
 
-def add_pp_verb_by_out(out,inp,pp_type,pp):
-    # only works for by (now)
+def get_out_noun(pp):
+    splits = pp.split(' ')
+    for i,word in enumerate(splits):
+        if '//N' in word:
+            if splits[i-1] == 'NN':
+                return word[:-3],'NN'
+            elif splits[i-1] == 'NNP':
+                return word[:-3],'NNP'
+
+def get_out_noun_pos(new_inp,out_noun):
+    i=0
+    for word in new_inp.split(' '):
+        if word == out_noun:
+            return i
+        if '//' in word:
+            i+=1
+            
+
+
+def add_pp_verb_by_out(out,new_inp,pp_type,pp,verb):
+    # only works for by (now) and for PPs WITHOUT proper nouns
+    inv_out = out[::-1]
+    out_noun,noun_type = get_out_noun(pp)
+    out_noun_pos = get_out_noun_pos(new_inp,out_noun)
+
+    splits = inv_out.split(' ')
+    cut_pos = len(splits)-1
+    for i,word in enumerate(splits):
+        if word == verb:
+            verb_pos = splits[i-6]
+            if splits - 8 == 'x':
+                cut_pos = len(splits)-i-11
+                break
+            else:
+                cut_pos = len(splits)-i-9
+                break
+    
+    if noun_type == 'NN':
+        added_out = verb + ' . agent ( x _ '+verb_pos+' , x _ '+out_noun_pos+' )'
+        splits = out.split(' ')
+        for i,word in enumerate(splits):
+            if word.isdigit() and int(word)>=out_noun_pos:
+                splits[i] = str(int(word)+2)
+       
+        new_out = splits[:cut_pos] + [added_out] + splits[cut_pos:]
+
+    if noun_type == 'NNP':
+        added_out = verb + ' . agent ( x _ '+verb_pos+' , '+ out_noun +' )'
+        for i,word in enumerate(splits):
+            if word.isdigit() and int(word)>=int(out_noun_pos):
+                splits[i] = str(int(word)+2)
+       
+        new_out = splits[:cut_pos] + [added_out] + splits[cut_pos:]
+
+
+    return new_out
+
+
+def add_pp_verb_to_out(out,inp,pp_type,pp):
+    # only works for to (now) and for PPs WITHOUT proper nouns
     inv_out = out[::-1]
     out_noun = get_out_noun(pp)
 
     splits = inv_out.split(' ')
     for i,word in enumerate(splits):
-        if word in ['theme','recipient']:
-            verb = splits[i+1]
+        if word in ['theme']:
+            verb = splits[i+2]
+
             verb_pos = splits[i+4]
             if splits - 6 == 'x':
                 cut_pos = len(splits)-i-9
@@ -312,49 +377,77 @@ def add_pp_verb_by_out(out,inp,pp_type,pp):
                 cut_pos = len(splits)-i-7
     
     added_out = verb + ' . agent ( x _ '+verb_pos+' , '+out_noun+' )'
-    new_out = splits[:cut_pos] + [] + splits[cut_pos:]
 
+    compl_splits = splits[cut_pos:]
+    for i,split in enumerate(compl_splits):
+        if split.isDigit():
+            compl_splits[i] = str(int(split)+2)
+
+
+    new_out = splits[:cut_pos] + [added_out] + compl_splits
+    return new_out
+
+
+def get_rand_pp(pp_type,dic):
+    rand_int = random.randint(0,len(dic[pp_type])-1)
+    return dic[pp_type].pop()
 
 def main():
     with open(IN_FILE) as f:
         read_tsv = csv.reader(f, delimiter='\t')
         
-        rows = list(read_tsv)
-        cont = 0
-        length = len(rows)
+
         dic = {'to':set(),
         'in':set(),
         'beside':set(),
         'by':set(),
         'on':set()}
+    
+        rows = list(read_tsv)
+        cont = 0
+        length = len(rows)
+        
 
         # DELETE LATER
         random.seed(1) 
         # DELETE LATER
 
-        for row in read_tsv:
+        for row in rows:
             inp,out,dist = row
-            pps,dic = get_pps(inp,dic)
+            dic = get_pps(inp,dic)
         
+       
         while (cont<MAX_ADDED_LINES):
             inp,out,dist = rows[random.randint(0,length-1)]
             
             if not valid(inp,dist): 
                 continue
             
-            possible_pps = get_possible_pps(out)
-            n_additions = random.randint(0,len(possible_pps)-1)
-            for i in range(n_additions):
-                pp_type = possible_pps[i]
-                rand_pp = get_rand_pp(pp_type) # return a random pp of type pp_type from dict
+            possible_pps,verbs = get_possible_pps_and_verb(out)
 
-                if pp_type in VERB_PPS:
-                    new_inp = add_pp_verb_inp(inp,pp_type,rand_pp)
-                    new_out = add_pp_verb_by_out(out,inp,pp_type,rand_pp) #only works for by
-                
-                elif pp_type in NOUN_PPS:
-                    new_inp = add_pp_noun_inp(inp,pp_type,rand_pp)
-                    new_out = add_pp_noun_out(out,inp,pp_type,rand_pp)
+            i = 0
+            for verb in verbs:
+                possible_pp = possible_pps[i]
+                i+=1
+                n_additions = random.randint(0,len(possible_pps)-1)
+                for i in range(n_additions):
+                    pp_type = possible_pps[i]
+                    rand_pp = get_rand_pp(pp_type,dic) # return a random pp of type pp_type from dict
+
+                    # if pp_type in VERB_PPS: #undelete
+                    if pp_type != 'by': continue #delete
+                    if pp_type in 'by': #delete
+
+                        new_inp = add_pp_verb_inp(inp,pp_type,rand_pp)
+                        new_out = add_pp_verb_by_out(out,new_inp,pp_type,rand_pp,verb) #only works for by
+                    
+                    elif pp_type in 'to':
+                        new_inp = add_pp_verb_inp(inp,pp_type,rand_pp)
+                        new_out = add_pp_verb_to_out(out,inp,pp_type,rand_pp) #only works for by    
+
+                    # elif pp_type in NOUN_PPS:
+                    #     new_inp = add_pp_noun_inp(inp,pp_type,rand_pp)
+                    #     new_out = add_pp_noun_out(out,inp,pp_type,rand_pp)
 
 
 
