@@ -56,13 +56,7 @@ def validate_new_inp(new_inp):
 
     return ' '.join(splits)
 
-def write_new_row(inp,out,dist,old_strategy,strategy):
-    cat = 'Normal'
-    if old_strategy != None: 
-        for k in strategy.keys():
-            if old_strategy[k] != strategy[k]:
-                cat = k
-        
+def write_new_row(inp,out,dist,or_inp,pp):
     inp_splits = inp.split(' ')
     final_inp = ''
     for i,word in enumerate(inp_splits):
@@ -70,16 +64,15 @@ def write_new_row(inp,out,dist,old_strategy,strategy):
             if inp_splits[i-1] == 'NNP': word = word[:-1]+'P'
             final_inp += word.replace('//',' ') + ' '
     final_out = final_clean_output(out)
-    # final_row = cat+' - '+ '\t'.join((final_inp,final_out,dist))
     final_row = '\t'.join((final_inp,final_out,dist))
 
 
-    # OUT_FILE.write('\t'.join((inp,out))+'\n')
-    # OUT_FILE.write('\t'.join((s_inp,s_out))+'\n')
-    # OUT_FILE.write('-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n')
+    OUT_FILE.write(or_inp+'\n')
+    OUT_FILE.write(pp+'\n')
+    OUT_FILE.write('-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n')
     
     OUT_FILE.write(final_row+'\n')
-    # OUT_FILE.write('\n==================================================================================================================================================================================================================================================================================================================================================================\n')
+    OUT_FILE.write('\n==================================================================================================================================================================================================================================================================================================================================================================\n')
 
 def get_pps(inp,dic):
     splits = inp.split(' ')
@@ -101,15 +94,15 @@ def get_pps(inp,dic):
                 pp_found = False
                 
                 if 'to//I' in pp:
-                    dic['to'].add(pp)
+                    dic['to'].append(pp)
                 elif 'in//I' in pp:
-                    dic['in'].add(pp)
+                    dic['in'].append(pp)
                 elif 'beside//I' in pp:
-                    dic['beside'].add(pp)
+                    dic['beside'].append(pp)
                 elif 'by//I' in pp:
-                    dic['by'].add(pp)
+                    dic['by'].append(pp)
                 elif 'on//I' in pp:
-                    dic['on'].add(pp)
+                    dic['on'].append(pp)
 
 
     return dic
@@ -267,7 +260,8 @@ def add_pp_verb_inp(inp,pp_type,pp):
                 return new_inp
             new_inp = 'PP'.join((new_inp,split))
     else:
-        new_inp = inp[:-15] + pp + ' ' + inp[-15:]
+
+        new_inp = inp[:-10] + pp + ' ' + inp[-10:]
         return new_inp
 
     
@@ -306,14 +300,17 @@ def get_verb(inp):
     return verb
 
 def get_out_noun(pp):
+    det = False
     splits = pp.split(' ')
     for i,word in enumerate(splits):
+        if word.lower() == 'the//d':
+            det = True
         if '//N' in word:
             if splits[i-1] == 'NN' or splits[i-1] == 'NNS':
-                return word[:-3],'NN'
+                return word[:-3],'NN',det
             if splits[i-1] == 'NNP':
-                return word[:-3],'NNP'
-    return None,None
+                return word[:-3],'NNP',det
+    return None,None,None
 def get_out_noun_pos(new_inp,out_noun):
     i=0
     for word in new_inp.split(' '):
@@ -326,7 +323,7 @@ def get_out_noun_pos(new_inp,out_noun):
 
 def add_pp_verb_by_out(out,new_inp,pp_type,pp,verb):
     # only works for by (now) and for PPs WITHOUT proper nouns
-    out_noun,noun_type = get_out_noun(pp)
+    out_noun,noun_type,det = get_out_noun(pp)
     out_noun_pos = get_out_noun_pos(new_inp,out_noun)
 
     inv_out_splits = out.split(' ')[::-1]
@@ -344,12 +341,20 @@ def add_pp_verb_by_out(out,new_inp,pp_type,pp,verb):
     
     if noun_type == 'NN':
         added_out = 'AND ' + verb + ' . agent ( x _ '+verb_pos+' , x _ '+str(out_noun_pos)+' ) '
-        splits = out.split(' ')
-        for i,word in enumerate(splits):
+        out_splits = out.split(' ')
+        for i,word in enumerate(out_splits):
             if word.isdigit() and int(word)>=out_noun_pos:
-                splits[i] = str(int(word)+2)
+                out_splits[i] = str(int(word)+2)
        
-        new_out = splits[:cut_pos] + [added_out] + splits[cut_pos:]
+        new_out = out_splits[:cut_pos] + [added_out] + out_splits[cut_pos:]
+        
+        if det: 
+            noun_out = '* '+out_noun+' ( x _ '+ (str(out_noun_pos))+' ) ; '
+            i = 0
+            while (out_splits[i] == '*' and int(out_splits[i+5])<out_noun_pos):
+                i+=8
+            new_out = new_out[:i] + [noun_out] + new_out[i:]
+    
 
     if noun_type == 'NNP':  
         added_out ='AND ' + verb + ' . agent ( x _ '+verb_pos+' , '+ out_noun +' ) '
@@ -394,7 +399,7 @@ def add_pp_verb_to_out(out,inp,pp_type,pp):
 
 def get_rand_pp(pp_type,dic):
     rand_int = random.randint(0,len(dic[pp_type])-1)
-    return next(iter(dic[pp_type]))
+    return dic[pp_type][rand_int]
 
     
 
@@ -403,11 +408,11 @@ def main():
         read_tsv = csv.reader(f, delimiter='\t')
         res = []
 
-        dic = {'to':set(),
-        'in':set(),
-        'beside':set(),
-        'by':set(),
-        'on':set()}
+        dic = {'to':[],
+        'in':[],
+        'beside':[],
+        'by':[],
+        'on':[]}
     
         rows = list(read_tsv)
         count = 0
@@ -425,7 +430,6 @@ def main():
        
         while (count<MAX_ADDED_LINES):
             inp,out,dist = rows[random.randint(0,length-1)]
-            
             if not valid(inp,dist): 
                 continue
             
@@ -448,6 +452,7 @@ def main():
                         new_inp = add_pp_verb_inp(inp,pp_type,rand_pp)
                         new_out = add_pp_verb_by_out(out,new_inp,pp_type,rand_pp,verb) #only works for by
                         res.append((new_inp,new_out))
+                        write_new_row(new_inp,new_out,dist,inp,rand_pp)
                         count+=1
                     elif pp_type in 'to':
                         new_inp = add_pp_verb_inp(inp,pp_type,rand_pp)
@@ -456,14 +461,15 @@ def main():
                     # elif pp_type in NOUN_PPS:
                     #     new_inp = add_pp_noun_inp(inp,pp_type,rand_pp)
                     #     new_out = add_pp_noun_out(out,inp,pp_type,rand_pp)
+    return res
 
 
 
 
 
 if __name__ == '__main__':
-    write_prev_rows()
-    main()
+    # write_prev_rows()
+    res = main()
     OUT_FILE.close()
     j=25
 

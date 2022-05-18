@@ -31,7 +31,7 @@ def validate_nn(nn_splits):
     for word in nn_splits:
         if '//' in word:
             cont+=1
-        if word.lower() == 'the':
+        if word.lower() == 'the//d':
             det = True
     return cont==2,det
 
@@ -223,9 +223,9 @@ def modify_out(inp,out, np, s_np,strategy):
         
         subs_pos = get_word_pos(inp,np_nnp)
         if det: 
-            subs_out = '* '+subs_word+'( x _ '+ (subs_pos)+'; '
+            subs_out = '* '+subs_word+'( x _ '+ (str(subs_pos))+'; '
             i = 0
-            if out_splits[i] == '*' and int(out_splits[5])<subs_word:
+            if out_splits[i] == '*' and int(out_splits[5])<subs_pos: #
                 i = 5
                 word_pos = int(out_splits[i])
                 while word_pos < subs_pos and out_splits[i+3]=='*':
