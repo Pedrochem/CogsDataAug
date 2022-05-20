@@ -2,6 +2,9 @@ import csv
 import enum
 import random
 from re import L, S
+from numpy import False_
+
+from regex import P
 from aug_train import final_clean_output
 
 IN_FILE = 'data/train_pos.tsv'
@@ -12,6 +15,9 @@ VERBS_COMP = ['agent','theme','recipient','xcomp','ccomp']
 
 NOUN_PPS = ['in','beside','on']
 OUT_FILE = open('results/substructure/res_no_pp_restriction.tsv', 'w')
+
+WAS_RESTRICTION = False
+SAME_NOUN_RESTRICTION = True 
 
 def get_outsplits_word_info(outsplits):
     pos = None
@@ -67,12 +73,12 @@ def write_new_row(inp,out,dist,or_inp,pp):
     final_row = '\t'.join((final_inp,final_out,dist))
 
 
-    OUT_FILE.write(or_inp+'\n')
-    OUT_FILE.write(pp+'\n')
-    OUT_FILE.write('-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n')
+    # OUT_FILE.write(or_inp+'\n')
+    # OUT_FILE.write(pp+'\n')
+    # OUT_FILE.write('-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n')
     
     OUT_FILE.write(final_row+'\n')
-    OUT_FILE.write('\n==================================================================================================================================================================================================================================================================================================================================================================\n')
+    # OUT_FILE.write('\n==================================================================================================================================================================================================================================================================================================================================================================\n')
 
 def get_pps(inp,dic):
     splits = inp.split(' ')
@@ -248,6 +254,10 @@ def modify_out(inp,out, np, s_np,strategy):
 def valid(inp,dist):
     if dist == 'primitive':
         return False
+    if 'was//V' not in inp and WAS_RESTRICTION:
+        return False
+
+    
     return True
 
 def add_pp_verb_inp(inp,pp_type,pp):
@@ -333,15 +343,17 @@ def add_pp_verb_by_out(out,new_inp,pp_type,pp,verb):
         if word == verb:
             verb_pos = inv_out_splits[i-6]
             if inv_out_splits[i-8] == 'x':
-                cut_pos = len(inv_out_splits)+i-11
+                cut_pos = len(inv_out_splits)-i+11
                 break
             else:
-                cut_pos = len(inv_out_splits)+i-9
+                cut_pos = len(inv_out_splits)-i+9
                 break
     
     if noun_type == 'NN':
-        added_out = 'AND ' + verb + ' . agent ( x _ '+verb_pos+' , x _ '+str(out_noun_pos)+' ) '
+        
+        added_out = 'AND ' + verb + ' . agent ( x _ '+verb_pos+' , x _ '+str(out_noun_pos)+' )'
         out_splits = out.split(' ')
+        
         for i,word in enumerate(out_splits):
             if word.isdigit() and int(word)>=out_noun_pos:
                 out_splits[i] = str(int(word)+2)
@@ -349,15 +361,22 @@ def add_pp_verb_by_out(out,new_inp,pp_type,pp,verb):
         new_out = out_splits[:cut_pos] + [added_out] + out_splits[cut_pos:]
         
         if det: 
-            noun_out = '* '+out_noun+' ( x _ '+ (str(out_noun_pos))+' ) ; '
+            noun_out = '* '+out_noun+' ( x _ '+ (str(out_noun_pos))+' ) ;'
             i = 0
             while (out_splits[i] == '*' and int(out_splits[i+5])<out_noun_pos):
                 i+=8
             new_out = new_out[:i] + [noun_out] + new_out[i:]
-    
+        else:
+            noun_out = 'AND '+out_noun+' ( x _ '+ (str(out_noun_pos))+' )'
+           
+            i=cut_pos+1
+            while len(new_out) > i+5 and new_out[i+5].isdigit():
+                i+=7
+            new_out = new_out[:i] + [noun_out] + new_out[i:]
 
+   
     if noun_type == 'NNP':  
-        added_out ='AND ' + verb + ' . agent ( x _ '+verb_pos+' , '+ out_noun +' ) '
+        added_out ='AND ' + verb + ' . agent ( x _ '+verb_pos+' , '+ out_noun +' )'
         splits = out.split(' ')
         for i,word in enumerate(splits):
             if word.isdigit() and int(word)>=out_noun_pos:
@@ -366,7 +385,8 @@ def add_pp_verb_by_out(out,new_inp,pp_type,pp,verb):
         new_out = splits[:cut_pos] + [added_out] + splits[cut_pos:]
         
 
-    return ' '.join(new_out)
+    res =  ' '.join(new_out)
+    return res
 
 
 def add_pp_verb_to_out(out,inp,pp_type,pp):
@@ -389,7 +409,7 @@ def add_pp_verb_to_out(out,inp,pp_type,pp):
 
     compl_splits = splits[cut_pos:]
     for i,split in enumerate(compl_splits):
-        if split.isDigit():
+        if split.isdigit():
             compl_splits[i] = str(int(split)+2)
 
 
@@ -401,7 +421,15 @@ def get_rand_pp(pp_type,dic):
     rand_int = random.randint(0,len(dic[pp_type])-1)
     return dic[pp_type][rand_int]
 
+def valid_pp(pp,inp):
+    noun = None
+    for word in pp.split(' '):
+        if '//N' in word:
+            noun = word
+    if noun != None and noun in inp and SAME_NOUN_RESTRICTION:
+        return False_
     
+    return True
 
 def main():
     with open(IN_FILE) as f:
@@ -444,14 +472,14 @@ def main():
                     pp_type = possible_pps[i]
                     i+=1
                     rand_pp = get_rand_pp(pp_type,dic) # return a random pp of type pp_type from dict
-
+                    if not valid_pp(rand_pp,inp) : continue
                     # if pp_type in VERB_PPS: #undelete
                     if pp_type != 'by': continue #delete
                     if pp_type in 'by': #delete
 
                         new_inp = add_pp_verb_inp(inp,pp_type,rand_pp)
                         new_out = add_pp_verb_by_out(out,new_inp,pp_type,rand_pp,verb) #only works for by
-                        res.append((new_inp,new_out))
+                        # res.append((new_inp,new_out))
                         write_new_row(new_inp,new_out,dist,inp,rand_pp)
                         count+=1
                     elif pp_type in 'to':
@@ -468,7 +496,7 @@ def main():
 
 
 if __name__ == '__main__':
-    # write_prev_rows()
+    write_prev_rows()
     res = main()
     OUT_FILE.close()
     j=25
