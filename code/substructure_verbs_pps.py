@@ -369,9 +369,18 @@ def add_pp_verb_by_out(out,new_inp,pp_type,pp,verb):
         else:
             noun_out = 'AND '+out_noun+' ( x _ '+ (str(out_noun_pos))+' )'
            
+
             i=cut_pos+1
-            while len(new_out) > i+5 and new_out[i+5].isdigit():
-                i+=7
+            stop = False
+            while(not stop):
+                stop = True
+                if len(new_out) > i+5 and new_out[i+5].isdigit():
+                    i+=7
+                    stop = False
+                elif len(new_out) > i+9 and new_out[i+3] == 'nmod' and new_out[i+9].isdigit(): 
+                    i+=15
+                    stop = False
+                    
             new_out = new_out[:i] + [noun_out] + new_out[i:]
 
    
