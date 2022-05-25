@@ -9,14 +9,14 @@ from torch import det
 from aug_train import final_clean_output
 
 IN_FILE = 'data/train_pos.tsv'
-MAX_ADDED_LINES = 10000
+MAX_ADDED_LINES = 100
 VERBS_COMP = ['agent','theme','recipient','xcomp','ccomp']
 
 NMODS_PPS = ['in//i','beside//i','on//i']
 
 
 
-OUT_FILE = open('results/substructure/substructure_nmod_beforev.tsv', 'w')
+OUT_FILE = open('results/substructure/substructure_nmod_random_v.tsv', 'w')
 
 WAS_RESTRICTION = False
 SAME_NOUN_RESTRICTION = True 
@@ -192,7 +192,7 @@ def get_possible_noun(inp,out):
     
     
     if len(res) != 0:
-        return res[0]
+        return random.choice(res)
     else:
         return None
 
@@ -325,7 +325,7 @@ def remove_out(out,inp,new_inp,subs_noun,nmod):
     subs_noun_pos = get_pos(subs_noun,inp)
     
     if out_splits[0] != '*':
-        out_splits = ['AND'] + out_splits
+        out_splits = ['BEG'] + out_splits
 
     new_out_splits = out_splits.copy()
 
@@ -345,9 +345,12 @@ def remove_out(out,inp,new_inp,subs_noun,nmod):
         if word == ';' and (len(out_splits[i:]) >= 5 and out_splits[i+5].isdigit() and out_splits[i+5] == subs_noun_pos):
             new_out_splits = new_out_splits[:i+1] + new_out_splits[i+7:]
         
+        if word == 'BEG' and (len(out_splits[i:]) >= 5 and out_splits[i+5].isdigit() and out_splits[i+5] == subs_noun_pos):
+            new_out_splits = new_out_splits[:i] + new_out_splits[i+7:]
+        
 
 
-    if new_out_splits[0] == 'AND':
+    if new_out_splits[0] == 'BEG':
         new_out_splits = new_out_splits[1:]
 
        
@@ -404,23 +407,39 @@ def add_nmod_out(out,inp,new_inp,nmod,subs_noun):
         if cut_pos != 0:
             cut_pos = cut_pos-1
     
-    if cut_pos == 0:
-        nmod_out = nmod_out.strip()
-        splits = nmod_out.split(' ')
-        splits = splits[1:]
-        if out_splits[det_cut_pos+cut_pos] != 'AND':
-            splits.append('AND')
-        nmod_out = ' '.join(splits)
+    end_det_pos = 0
+    for i,word in enumerate(out_splits):
+        if word == ';':
+            end_det_pos = i+1
     
+    if end_det_pos > cut_pos:
+        cut_pos = end_det_pos
 
-    new_det_out = ''.join((' '.join(out_splits[:det_cut_pos]), det_out)) + ' '
-    new_beg_out = ' '.join(out_splits[det_cut_pos:cut_pos])
-    new_compl_out = ' '.join(out_splits[det_cut_pos+cut_pos:])
+    if end_det_pos > det_cut_pos:
+        new_det_out_beg = ' '.join(out_splits[:det_cut_pos])
+        new_det_out_end = ' '.join(out_splits[det_cut_pos:end_det_pos])
+        final_det_out = new_det_out_beg + ' ' + det_out + ' ' + new_det_out_end
+
+    else: 
+        new_det_out_beg = ' '.join(out_splits[:det_cut_pos])
+        final_det_out = new_det_out_beg + ' ' + det_out
+
+
+    nmod_out = nmod_out.strip()
+    splits = nmod_out.split(' ')
+    if splits[0] == 'AND' and cut_pos == end_det_pos:
+        splits = splits[1:]
+        nmod_out = ' '.join(splits)
+
+    new_beg_out = ' '.join(out_splits[end_det_pos:cut_pos])
+    new_compl_out = ' '.join(out_splits[cut_pos:])
     
-    
-    new_out = ' '.join((new_det_out.strip(),new_beg_out.strip(),nmod_out.strip(),new_compl_out.strip()))
-    new_out = new_out.replace('  ',' ')
-    return new_out
+    new_nmod_out = new_beg_out + ' ' + nmod_out + ' ' + new_compl_out
+    final_out = final_det_out + ' ' + new_nmod_out
+
+    final_out = final_out.strip()    
+    final_out = final_out.replace('  ',' ')
+    return final_out
 
 
 def main():
@@ -473,7 +492,7 @@ def main():
 
 
 if __name__ == '__main__':
-    write_prev_rows()
+    #write_prev_rows()
     res = main()
     OUT_FILE.close()
 
