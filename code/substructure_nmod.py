@@ -5,6 +5,7 @@ from re import L, S
 from numpy import False_
 
 from regex import P
+from torch import det
 from aug_train import final_clean_output
 
 IN_FILE = 'data/train_pos.tsv'
@@ -15,7 +16,7 @@ NMODS_PPS = ['in//i','beside//i','on//i']
 
 
 
-OUT_FILE = open('results/substructure/substructure_nmod.tsv', 'w')
+OUT_FILE = open('results/substructure/substructure_nmod_beforev.tsv', 'w')
 
 WAS_RESTRICTION = False
 SAME_NOUN_RESTRICTION = True 
@@ -49,7 +50,7 @@ def write_new_row(inp,out,dist,or_inp,or_out,nmod):
 
     # nmod = nmod.strip()
     # or_inp = or_inp.strip()
-    
+
     final_inp = final_inp.strip()
     final_out = final_out.strip()
 
@@ -169,11 +170,11 @@ def get_possible_noun(inp,out):
 
     nouns = []
     for i,word in enumerate(inp_splits):
-        if word == 'VP':
-            verb_found = True
+        # if word == 'VP':
+        #     verb_found = True
 
-        if not verb_found: 
-            continue
+        # if not verb_found: 
+        #     continue
 
         if '//N' in word and inp_splits[i-1] == 'NN':
             nouns.append(word)
@@ -278,7 +279,7 @@ def get_nmod_out(nmod,new_inp):
     det_out = ''
     cut_ind = None
     n_words = 0
-    det_cut_ind = 0
+    det_cut_ind = len(new_inp)
 
     for i,word in enumerate(nmod_splits):
         word = word.lower() # todo check lower
@@ -290,7 +291,7 @@ def get_nmod_out(nmod,new_inp):
                     nmod_out = ' '.join((nmod_out,'AND '+word[:-3]+' ( x _ '+word_pos+' )'))
                 else:        
                     det_out =' '.join((det_out,'* '+word[:-3]+' ( x _ '+word_pos+' ) ;' ))
-                    if det_cut_ind == 0: 
+                    if det_cut_ind == len(new_inp): 
                         det_cut_ind = int(word_pos)
 
                 if cut_ind is None: 
@@ -338,8 +339,13 @@ def remove_out(out,inp,new_inp,subs_noun,nmod):
         if word == '*' and len(out_splits[i:]) >= 5 and out_splits[i+5].isdigit() and out_splits[i+5] == subs_noun_pos:
             new_out_splits = new_out_splits[:i] + new_out_splits[i+8:]
 
-        if word == 'AND' and (len(out_splits[i:]) >= 7 and out_splits[i+5].isdigit() and out_splits[i+5] == subs_noun_pos):
+        if word == 'AND' and (len(out_splits[i:]) >= 5 and out_splits[i+5].isdigit() and out_splits[i+5] == subs_noun_pos):
             new_out_splits = new_out_splits[:i] + new_out_splits[i+7:]
+        
+        if word == ';' and (len(out_splits[i:]) >= 5 and out_splits[i+5].isdigit() and out_splits[i+5] == subs_noun_pos):
+            new_out_splits = new_out_splits[:i+1] + new_out_splits[i+7:]
+        
+
 
     if new_out_splits[0] == 'AND':
         new_out_splits = new_out_splits[1:]
@@ -370,7 +376,7 @@ def add_nmod_out(out,inp,new_inp,nmod,subs_noun):
 
     cutted = False
     det_cut_pos = 0
-    cut_pos = None
+    cut_pos = 0
     out_splits = removed_out.split(' ')
     subs_noun_n_words = get_n_words(subs_noun,inp)
     
@@ -395,12 +401,25 @@ def add_nmod_out(out,inp,new_inp,nmod,subs_noun):
 
     if out_splits[0] == 'AND':
         out_splits = out_splits[1:]
-        cut_pos = cut_pos-1
+        if cut_pos != 0:
+            cut_pos = cut_pos-1
+    
+    if cut_pos == 0:
+        nmod_out = nmod_out.strip()
+        splits = nmod_out.split(' ')
+        splits = splits[1:]
+        if out_splits[det_cut_pos+cut_pos] != 'AND':
+            splits.append('AND')
+        nmod_out = ' '.join(splits)
+    
 
-    new_out = ''.join((' '.join(out_splits[:det_cut_pos]), det_out)) + ' '
-
-    new_out += ' '.join(out_splits[det_cut_pos:cut_pos]) +nmod_out+ ' ' + ' '.join(out_splits[cut_pos:])
-
+    new_det_out = ''.join((' '.join(out_splits[:det_cut_pos]), det_out)) + ' '
+    new_beg_out = ' '.join(out_splits[det_cut_pos:cut_pos])
+    new_compl_out = ' '.join(out_splits[det_cut_pos+cut_pos:])
+    
+    
+    new_out = ' '.join((new_det_out.strip(),new_beg_out.strip(),nmod_out.strip(),new_compl_out.strip()))
+    new_out = new_out.replace('  ',' ')
     return new_out
 
 
