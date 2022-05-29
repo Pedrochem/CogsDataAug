@@ -9,7 +9,7 @@ from torch import det
 from aug_train import final_clean_output
 
 IN_FILE = 'data/train_pos.tsv'
-MAX_ADDED_LINES = 100
+MAX_ADDED_LINES = 10000
 VERBS_COMP = ['agent','theme','recipient','xcomp','ccomp']
 
 NMODS_PPS = ['in//i','beside//i','on//i']
@@ -28,7 +28,7 @@ def write_prev_rows():
         reader = csv.reader(f, delimiter='\t')
         for row in reader:
             inp,out,dist = row
-            write_new_row(inp,out,dist,None,None,None)
+            write_new_row(inp,out,dist,None,None,None,None)
 
 
 
@@ -41,8 +41,14 @@ def get_final_inp(inp):
             final_inp += word.replace('//',' ') + ' '
     return final_inp
 
-def write_new_row(inp,out,dist,or_inp,or_out,nmod):
-    # or_inp = get_final_inp(or_inp)
+def write_new_row(inp,out,dist,or_inp,or_out,nmod,subus_noun):
+    # or_inp = get_final_inp(or_inp).strip()
+    # or_inp_splits = or_inp.split(' ')
+    # for i,w in enumerate(or_inp_splits):
+    #     if w == subus_noun[:-3]:
+    #         or_inp_splits[i] = '|'+w+'|'
+    # or_inp = ' '.join(or_inp_splits)
+
     # nmod = get_final_inp(nmod)
 
     final_inp = get_final_inp(inp)
@@ -52,6 +58,7 @@ def write_new_row(inp,out,dist,or_inp,or_out,nmod):
     # or_inp = or_inp.strip()
 
     final_inp = final_inp.strip()
+    final_inp = final_inp[0].upper() + final_inp[1:]
     final_out = final_out.strip()
 
 
@@ -196,33 +203,7 @@ def get_possible_noun(inp,out):
     else:
         return None
 
-def get_possible_nouns_and_nmods_type(inp,out):
-    out_splits = out.split(' ')
-    inp_splits = inp.split(' ')
-    verb_found = False
 
-    nouns = []
-    for i,word in enumerate(inp_splits):
-        if word == 'VP':
-            verb_found = True
-
-        if not verb_found: 
-            continue
-
-        if '//N' in word and inp_splits[i-1] == 'NN':
-            nouns.append(word)
-    
-    possible_nmods = ['in','on','beside']
-    
-    dic = {}
-    for n in nouns: 
-        dic[n] = possible_nmods
-
-    for i,word in enumerate(out_splits):
-        if word == 'nmod':
-            dic[out_splits-2] = dic[out_splits-2].remove(out_splits[i+2])
-    
-    return dic
 
 def get_verb(inp):
     for word in inp.split(' '):
@@ -482,7 +463,7 @@ def main():
                 continue
 
             
-            write_new_row(new_inp,new_out,dist,inp,out,nmod)
+            write_new_row(new_inp,new_out,dist,inp,out,nmod,subs_noun)
             count+=1
             
     return res
@@ -492,7 +473,7 @@ def main():
 
 
 if __name__ == '__main__':
-    #write_prev_rows()
+    write_prev_rows()
     res = main()
     OUT_FILE.close()
 

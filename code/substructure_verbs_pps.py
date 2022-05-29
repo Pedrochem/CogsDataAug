@@ -483,7 +483,7 @@ def main():
                     rand_pp = get_rand_pp(pp_type,dic) # return a random pp of type pp_type from dict
                     if not valid_pp(rand_pp,inp) : continue
                     # if pp_type in VERB_PPS: #undelete
-                    if pp_type != 'by': continue #delete
+                    if pp_type != 'by': continue # delete later
                     if pp_type in 'by': #delete
 
                         new_inp = add_pp_verb_inp(inp,pp_type,rand_pp)
@@ -508,6 +508,5 @@ if __name__ == '__main__':
     write_prev_rows()
     res = main()
     OUT_FILE.close()
-    j=25
 
 
