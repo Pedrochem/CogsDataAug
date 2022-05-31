@@ -5,7 +5,7 @@ from re import L, S
 from aug_train import final_clean_output
 
 IN_FILE = 'data/train_pos.tsv'
-MAX_ADDED_LINES = 10000
+MAX_ADDED_LINES = 7000
 CLASSES_NN = ['NN','DT']
 
 OUT_FILE = open('results/substructure/res_no_pp_restriction.tsv', 'w')
@@ -223,7 +223,7 @@ def modify_out(inp,out, np, s_np,strategy):
         
         subs_pos = get_word_pos(inp,np_nnp)
         if det: 
-            subs_out = '* '+subs_word+'( x _ '+ (str(subs_pos))+'; '
+            subs_out = '* '+subs_word+' ( x _ '+ (str(subs_pos))+' ) ; '
             i = 0
             if out_splits[i] == '*' and int(out_splits[5])<subs_pos: #
                 i = 5
@@ -284,10 +284,16 @@ def main():
         # DELETE LATER
         random.seed(1) 
         # DELETE LATER
+        line_i = 0
 
         while (cont<MAX_ADDED_LINES):
-            inp,out,dist = rows[random.randint(0,length-1)]
-            s_inp,s_out,s_dist = rows[random.randint(0,length-1)]
+            
+            # inp,out,dist = rows[random.randint(0,length-1)]
+            # s_inp,s_out,s_dist = rows[random.randint(0,length-1)] 
+         
+            inp,out,dist = rows[line_i]
+            s_inp,s_out,s_dist = rows[line_i+15]
+            line_i+=1
             
             if inp == s_inp: continue
             nps = get_np(inp,out)
@@ -302,6 +308,7 @@ def main():
 
             s_nps = s_nps[::-1]
             new_inp,new_out = inp, out
+            # control_flag = False
 
             for i in range(len(nps)): 
                 if nps[i][0] == s_nps[i][0]: 
@@ -313,10 +320,12 @@ def main():
                 old_strategy = strategy.copy()
                 res,strategy = modify_out(new_inp,new_out,np,s_np,strategy)
                 if res != None: 
+                    control_flag = True
                     new_out = res
                     new_inp = new_inp.replace(np, s_np)
 
             
+            # if new_inp != None and new_out != None and control_flag:
             if new_inp != None and new_out != None:
                 new_inp = validate_new_inp(new_inp)
                 write_new_row(new_inp,new_out,dist,old_strategy,strategy)
@@ -324,12 +333,13 @@ def main():
 
 
         print(strategy)
+        print(i)
 
 
 
 
 if __name__ == '__main__':
-    write_prev_rows()
+    #write_prev_rows()
     main()
     OUT_FILE.close()
 

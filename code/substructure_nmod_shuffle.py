@@ -17,7 +17,7 @@ NMODS_PPS = ['in//i','beside//i','on//i']
 AFTER_V = False
 
 
-OUT_FILE = open('results/substructure/substrucutre_both_03_with_nnp.tsv', 'w')
+OUT_FILE = open('results/substructure/shuffle_substrucutre_both_03_with_nnp.tsv', 'w')
 # OUT_FILE = open('testing/substrucutre_both_03_with_nnp.tsv', 'w')
 
 
@@ -27,11 +27,14 @@ SAME_NOUN_RESTRICTION = True
 
 
 def write_prev_rows():
+    final_rows = []
     with open(IN_FILE, 'r') as f:
         reader = csv.reader(f, delimiter='\t')
         for row in reader:
             inp,out,dist = row
-            write_new_row(inp,out,dist,None,None,None,None)
+            final_row = write_new_row(inp,out,dist,None,None,None,None)
+            final_rows.append(final_row)
+    return final_rows        
 
 
 
@@ -66,13 +69,13 @@ def write_new_row(inp,out,dist,or_inp,or_out,nmod,subus_noun):
     final_out = final_out.replace('  ',' ')
 
     final_row = '\t'.join((final_inp,final_out,dist))
-
+    return final_row
 
     # OUT_FILE.write(or_inp+'\t'+or_out+'\n')
     # OUT_FILE.write(nmod+'\n')
     # OUT_FILE.write('-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n')
     
-    OUT_FILE.write(final_row+'\n')
+    #OUT_FILE.write(final_row+'\n')
     # OUT_FILE.write('\n==================================================================================================================================================================================================================================================================================================================================================================\n')
 
 
@@ -515,7 +518,9 @@ def add_nmod_out(out,inp,new_inp,nmod,subs_noun):
 
 
 def main():
+    final_rows = []
     with open(IN_FILE) as f:
+        
         read_tsv = csv.reader(f, delimiter='\t')
         res = []
         dic = []
@@ -552,7 +557,6 @@ def main():
                 nmod = random.choice(nmods)
             
             
-            # nmod = random.choice(simple_nps)
 
             if not valid_nmod(nmod,inp): 
                 continue
@@ -564,18 +568,23 @@ def main():
                 continue
 
             
-            write_new_row(new_inp,new_out,dist,inp,out,nmod,subs_noun)
+            final_row = write_new_row(new_inp,new_out,dist,inp,out,nmod,subs_noun)
+            final_rows.append(final_row)
             count+=1
             
-    return res
+    return final_rows
 
 
 
 
 
 if __name__ == '__main__':
-    write_prev_rows()
-    res = main()
+    prev_rows = write_prev_rows()
+    main_rows = main()
+    final_rows = prev_rows + main_rows
+    random.shuffle(final_rows)
+    for row in final_rows:
+        OUT_FILE.write(row+'\n')
     OUT_FILE.close()
 
 
