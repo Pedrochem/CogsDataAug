@@ -8,7 +8,7 @@ IN_FILE = 'data/train_pos.tsv'
 MAX_ADDED_LINES = 7000
 CLASSES_NN = ['NN','DT']
 
-OUT_FILE = open('results/substructure/res_no_pp_restriction.tsv', 'w')
+OUT_FILE = open('results/substructure/original_pp_no_nnp_nn.tsv', 'w')
 
 def get_outsplits_word_info(outsplits):
     pos = None
@@ -44,17 +44,7 @@ def write_prev_rows():
 
 
 
-def validate_new_inp(new_inp):
-    first = True
-    splits = new_inp.split(' ')
-    for i,word in enumerate(splits):
-        if '//' in word and not first:
-            splits[i] = word[0].lower() + word[1:]
-        if '//' in word and first:
-            splits[i] = word[0].upper() + word[1:]
-            first = False
 
-    return ' '.join(splits)
 
 def write_new_row(inp,out,dist,old_strategy,strategy):
     cat = 'Normal'
@@ -104,18 +94,18 @@ def get_np(inp,out):
     pp_brackets = None
 
     for i,word in enumerate(splits):
-        # if word == 'PP':
-        #     pp_found = True
-        #     pp_brackets = 1
-        # if pp_found:
-        #     if word == '(':
-        #         pp_brackets += 1
-        #     elif word == ')':
-        #         pp_brackets -= 1
-        #     if pp_brackets == 0:
-        #         pp_found = False
-        # if word == 'NP' and not pp_found:
-        if word == 'NP':
+        if word == 'PP':
+            pp_found = True
+            pp_brackets = 1
+        if pp_found:
+            if word == '(':
+                pp_brackets += 1
+            elif word == ')':
+                pp_brackets -= 1
+            if pp_brackets == 0:
+                pp_found = False
+        if word == 'NP' and not pp_found:
+        # if word == 'NP':
             np_found = True
             np_pos = i
             brackets = 1
@@ -210,6 +200,7 @@ def modify_out(inp,out, np, s_np,strategy):
             return res, strategy
     
     if 'NNP' in np_splits and 'NN' in s_np_splits:
+        return None,strategy
         subs_word = s_np_splits[s_np_splits.index('NN')+1][:-3]
 
         valid,det = validate_nn(s_np_splits)
@@ -267,9 +258,44 @@ def modify_out(inp,out, np, s_np,strategy):
 
     
     return None,strategy
+     
+def make_new_inp(inp,np,s_np):
+    if ' NNP ' in s_np:
+        return inp.replace(np,s_np)
+
+
+    s_np_splits = s_np.split(' ')
     
+    s_np_lower = ''
+    s_np_upper = ''
+    first = True
 
+    for i,word in enumerate(s_np_splits):
+        if '//' in word and first:
+            s_np_lower += word[0].lower()+word[1:]
+            first = False
+        else:
+            s_np_lower += word
+        s_np_lower += ' '
+    s_np_lower = s_np_lower.strip()
 
+    first = True
+
+    for i,word in enumerate(s_np_splits):
+        if '//' in word and first:
+            s_np_upper += word[0].upper()+word[1:]
+            first = False
+        else:
+            s_np_upper += word
+        s_np_upper += ' '
+    
+    s_np_upper = s_np_upper.strip()
+
+    if  inp[4:4+len(np)] != np:
+        return inp.replace(np,s_np_lower)
+    else:
+        return inp.replace(np,s_np_upper)
+    
 def main():
     '''
     Iterates over dataset and select random rows to be modified
@@ -308,7 +334,8 @@ def main():
 
             s_nps = s_nps[::-1]
             new_inp,new_out = inp, out
-            # control_flag = False
+            
+            control_flag = False
 
             for i in range(len(nps)): 
                 if nps[i][0] == s_nps[i][0]: 
@@ -320,14 +347,13 @@ def main():
                 old_strategy = strategy.copy()
                 res,strategy = modify_out(new_inp,new_out,np,s_np,strategy)
                 if res != None: 
+                    new_inp = make_new_inp(inp,np,s_np)
                     control_flag = True
                     new_out = res
-                    new_inp = new_inp.replace(np, s_np)
 
             
-            # if new_inp != None and new_out != None and control_flag:
-            if new_inp != None and new_out != None:
-                new_inp = validate_new_inp(new_inp)
+            if control_flag:
+            # if new_inp != None and new_out != None:
                 write_new_row(new_inp,new_out,dist,old_strategy,strategy)
                 cont+=1
 

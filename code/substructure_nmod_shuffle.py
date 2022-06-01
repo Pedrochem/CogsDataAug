@@ -502,7 +502,7 @@ def add_nmod_out(out,inp,new_inp,nmod,subs_noun):
     new_beg_out = ' '.join(out_splits[end_det_pos:cut_pos])
     new_compl_out = ' '.join(out_splits[cut_pos:])
 
-    if splits[-1] != 'AND' and new_compl_out.split(' ')[0] != 'AND':
+    if splits[-1] != 'AND' and len(new_compl_out) > 0 and new_compl_out.split(' ')[0] != 'AND':
         nmod_out = nmod_out + ' AND'
 
     

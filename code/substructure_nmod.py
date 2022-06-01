@@ -9,15 +9,15 @@ from torch import det
 from aug_train import final_clean_output
 
 IN_FILE = 'data/train_pos.tsv'
-MAX_ADDED_LINES = 10000
+MAX_ADDED_LINES = 7000
 VERBS_COMP = ['agent','theme','recipient','xcomp','ccomp']
 
 NMODS_PPS = ['in//i','beside//i','on//i']
 
 AFTER_V = False
+PP_REST = True
 
-
-OUT_FILE = open('results/substructure/substrucutre_both_03_with_nnp.tsv', 'w')
+OUT_FILE = open('results/new_substructure/subs_both_pp_rest_05simplecomplex_7kadd.tsv', 'w')
 # OUT_FILE = open('testing/substrucutre_both_03_with_nnp.tsv', 'w')
 
 
@@ -167,6 +167,7 @@ def get_nmods(inp,nmods):
                 nmod = '( ' + ' '.join(splits[pp_pos:i+1])
                 np_nmod = last_np + ' ' + nmod
                 pp_found = False 
+                if valid # TODO aqui evitar 'on' + NNP 
                 nmods.append(np_nmod)
 
 
@@ -233,17 +234,30 @@ def add_nmod_inp(noun,inp,nmod):
     return new_inp
 
 
-def get_possible_noun(inp,out):
+def get_possible_noun(inp,out,pp_rest):
     out_splits = out.split(' ')
     inp_splits = inp.split(' ')
     verb_found = not AFTER_V
-
+    pp_found = False
+    pp_brackets = None
     nouns = []
+   
     for i,word in enumerate(inp_splits):
+        if word == 'PP':
+            pp_found = True
+            pp_brackets = 1
+        if pp_found:
+            if word == '(':
+                pp_brackets += 1
+            elif word == ')':
+                pp_brackets -= 1
+            if pp_brackets == 0:
+                pp_found = False
+
         if word == 'VP':
             verb_found = True
 
-        if not verb_found: 
+        if not verb_found or (pp_found and pp_rest): 
             continue
 
         if '//N' in word and inp_splits[i-1] == 'NN':
@@ -434,6 +448,22 @@ def add_nmod_out(out,inp,new_inp,nmod,subs_noun):
         if final_out[:3] == 'AND':
             final_out = final_out[3:]
         final_out = final_out.replace('; AND',';')
+
+        np_nwords = get_n_words(subs_noun,inp)
+        nmod_nwords = get_n_words(nmod,new_inp)
+
+        splits = final_out.split(' ')
+
+
+        if nmod_nwords == 1 and np_nwords == 2:
+            for i,word in enumerate(splits):
+                if word.isdigit() and int(word) > int(subs_nmod_pos):
+                    splits[i] = str(int(word)-1) 
+        
+            final_out = ' '.join(splits)
+
+        elif nmod_nwords != np_nwords:
+            raise Exception
         return final_out
     
 
@@ -498,8 +528,8 @@ def add_nmod_out(out,inp,new_inp,nmod,subs_noun):
 
     new_beg_out = ' '.join(out_splits[end_det_pos:cut_pos])
     new_compl_out = ' '.join(out_splits[cut_pos:])
-
-    if splits[-1] != 'AND' and new_compl_out.split(' ')[0] != 'AND':
+    new_compl_out = new_compl_out.strip()
+    if splits[-1] != 'AND' and len(new_compl_out) > 0 and new_compl_out.split(' ')[0] != 'AND':
         nmod_out = nmod_out + ' AND'
 
     
@@ -541,18 +571,21 @@ def main():
             if not valid(inp,dist): 
                 continue
             
-            subs_noun = get_possible_noun(inp,out)
-            if not subs_noun: continue
 
 
             rand_int = random.random()
-            if rand_int < 0.3:
+            # if rand_int <= 1:
+            if rand_int <= 0.5:
                 nmod = random.choice(simple_nps)
+                subs_noun = get_possible_noun(inp,out,pp_rest=True)
+
             else:
                 nmod = random.choice(nmods)
+                subs_noun = get_possible_noun(inp,out,pp_rest=False)
+
             
-            
-            # nmod = random.choice(simple_nps)
+            if not subs_noun: continue
+
 
             if not valid_nmod(nmod,inp): 
                 continue
