@@ -9,7 +9,7 @@ from torch import det
 from aug_train import final_clean_output
 
 IN_FILE = 'data/train_pos.tsv'
-MAX_ADDED_LINES = 7000
+MAX_ADDED_LINES = 10000
 VERBS_COMP = ['agent','theme','recipient','xcomp','ccomp']
 
 NMODS_PPS = ['in//i','beside//i','on//i']
@@ -17,7 +17,7 @@ NMODS_PPS = ['in//i','beside//i','on//i']
 AFTER_V = False
 PP_REST = True
 
-OUT_FILE = open('results/new_substructure/subs_both_pp_rest_05simplecomplex_7kadd.tsv', 'w')
+OUT_FILE = open('results/new_substructure/subs_both_after_nmod_bug_pp_rest_05simplecomplex_10kadd.tsv', 'w')
 # OUT_FILE = open('testing/substrucutre_both_03_with_nnp.tsv', 'w')
 
 
@@ -123,14 +123,19 @@ def get_simple_nps(inp,out,simple_nps):
                 brackets-=1
             if brackets == 0:
                 np = '( ' + ' '.join(splits[np_pos:i+1])
-                if validate_simple_np(np,inp,out) and words>=2:
+                # if validate_simple_np(np,inp,out) and words>=2:
+                if validate_simple_np(np,inp,out) and (words==2 or (words==1 and 'NNP' in np)):
                     np = np[:10] + np[10].lower() + np[11:]
                     nps_lst.append(np)
                 np_found = False
     [simple_nps.append(np) for np in nps_lst]
     return simple_nps
 
-
+def valid_np_nmod(np_nmod):
+    if ' to//I ' in np_nmod or ' by//I ' in np_nmod or 'NNP' in np_nmod:
+        return False
+    return True
+    
 def get_nmods(inp,nmods):
     splits = inp.split(' ')
     brackets = None
@@ -154,11 +159,11 @@ def get_nmods(inp,nmods):
                 last_np = '( ' + ' '.join(splits[np_pos:i+1])
                 np_found = False
 
-        if word == 'PP' and splits[i+3].lower() in NMODS_PPS :
+        if not pp_found and word == 'PP' and splits[i+3].lower() in NMODS_PPS:
             pp_found = True
             pp_pos = i
             brackets = 1
-        elif pp_found:
+        if pp_found:
             if word == '(':
                 brackets+=1
             elif word == ')':
@@ -167,8 +172,8 @@ def get_nmods(inp,nmods):
                 nmod = '( ' + ' '.join(splits[pp_pos:i+1])
                 np_nmod = last_np + ' ' + nmod
                 pp_found = False 
-                if valid # TODO aqui evitar 'on' + NNP 
-                nmods.append(np_nmod)
+                if valid_np_nmod(np_nmod): 
+                    nmods.append(np_nmod)
 
 
     return nmods
@@ -463,7 +468,7 @@ def add_nmod_out(out,inp,new_inp,nmod,subs_noun):
             final_out = ' '.join(splits)
 
         elif nmod_nwords != np_nwords:
-            raise Exception
+            return None
         return final_out
     
 
@@ -549,6 +554,14 @@ def main():
         read_tsv = csv.reader(f, delimiter='\t')
         res = []
         dic = []
+        test = {}
+        test2 = {}
+
+        
+        control_1 = 0
+        control_2 = 0
+
+    
         simple_nps = []
 
         rows = list(read_tsv)
@@ -565,24 +578,52 @@ def main():
             nmods = get_nmods(inp,nmods)
             simple_nps = get_simple_nps(inp,out,simple_nps)
         
-       
+        simple_nps_dic = {i:simple_nps.count(i) for i in simple_nps}
+        for k,v in simple_nps_dic.items(): 
+            simple_nps_dic[k] = 1/v
+        
+        nmods_dic = {i:nmods.count(i) for i in nmods}
+        for k,v in nmods_dic.items():
+            nmods_dic[k] = 1/v
+
+        set_1 = set(simple_nps)
+        set_2 = set(nmods)
+
+        set_1 = list(set_1)
+        set_2 = list(set_2)
+
         while (count<MAX_ADDED_LINES):
             inp,out,dist = rows[random.randint(0,length-1)]
             if not valid(inp,dist): 
                 continue
-            
-
-
+        
             rand_int = random.random()
-            # if rand_int <= 1:
+
             if rand_int <= 0.5:
-                nmod = random.choice(simple_nps)
+                if control_1 < 1000:                 
+                    nmod = random.choices(population=list(simple_nps_dic.keys()),weights = simple_nps_dic.values(), k =1)[0]
+                    control_1 +=1
+                else:
+                    nmod = random.choice(set_1)
+               
+                if nmod in test:
+                    test[nmod] += 1
+                else:
+                    test[nmod] = 1
                 subs_noun = get_possible_noun(inp,out,pp_rest=True)
 
             else:
-                nmod = random.choice(nmods)
+                if control_2 < 1000:
+                    nmod = random.choices(population=list(nmods_dic.keys()),weights = nmods_dic.values(), k =1)[0]
+                    control_2 +=1
+                else:
+                    nmod = random.choice(set_2)
+                if nmod in test2:
+                    test2[nmod] += 1
+                else:
+                    test2[nmod] = 1
                 subs_noun = get_possible_noun(inp,out,pp_rest=False)
-
+                
             
             if not subs_noun: continue
 
