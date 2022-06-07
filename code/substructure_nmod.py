@@ -61,7 +61,8 @@ def write_new_row(inp,out,dist,or_inp,or_out,nmod,subus_noun):
     # or_inp = or_inp.strip()
 
     final_inp = final_inp.strip()
-    final_inp = final_inp[0].upper() + final_inp[1:]
+    if dist != 'primitive':
+        final_inp = final_inp[0].upper() + final_inp[1:]
     final_out = final_out.strip()
     final_out = final_out.replace('  ',' ')
 
