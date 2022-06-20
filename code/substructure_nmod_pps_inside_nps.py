@@ -134,47 +134,31 @@ def get_simple_nps(inp,out,simple_nps):
 def valid_np_nmod(np_nmod):
     if ' to//I ' in np_nmod or ' by//I ' in np_nmod or 'NNP' in np_nmod:
         return False
-    return True
+    return ' PP ' in np_nmod
     
 def get_nmods(inp,nmods):
     splits = inp.split(' ')
     brackets = None
-    pp_found = False
     np_found = False
-    last_np = None
 
     for i,word in enumerate(splits):
         
-        if not pp_found and word == 'NP':
+        if not np_found and word == 'NP':
             np_found = True
             np_pos = i
-            np_brackets = 1
-        
-        if not pp_found and np_found:
-            if word == '(':
-                np_brackets+=1
-            elif word == ')':
-                np_brackets-=1
-            if np_brackets == 0:
-                last_np = '( ' + ' '.join(splits[np_pos:i+1])
-                np_found = False
-
-        if not pp_found and word == 'PP' and splits[i+3].lower() in NMODS_PPS:
-            pp_found = True
-            pp_pos = i
             brackets = 1
-        if pp_found:
+        
+        if  np_found:
             if word == '(':
                 brackets+=1
             elif word == ')':
                 brackets-=1
             if brackets == 0:
-                nmod = '( ' + ' '.join(splits[pp_pos:i+1])
-                np_nmod = last_np + ' ' + nmod
-                pp_found = False 
-                if valid_np_nmod(np_nmod): 
-                    nmods.append(np_nmod)
-
+                np = '( ' + ' '.join(splits[np_pos:i+1])
+                np_found = False
+                if valid_np_nmod(np):
+                    np = np[5:]
+                    nmods.append(np)
 
     return nmods
 

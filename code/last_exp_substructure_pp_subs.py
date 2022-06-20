@@ -16,7 +16,7 @@ NMODS_PPS = ['in//i','beside//i','on//i']
 
 AFTER_V = False
 
-OUT_FILE = open('results/new_substructure/subs_07_20kadd.tsv', 'w')
+OUT_FILE = open('results/new_substructure/last_exp_pp_subs_05_20kadd.tsv', 'w')
 # OUT_FILE = open('testing/substrucutre_both_03_with_nnp.tsv', 'w')
 
 
@@ -76,105 +76,33 @@ def write_new_row(inp,out,dist,or_inp,or_out,nmod,subus_noun):
     # OUT_FILE.write('\n==================================================================================================================================================================================================================================================================================================================================================================\n')
 
 
-def validate_simple_np(np,inp,out):
-    out_splits = out.split(' ')
-    np_splits = np.split(' ')
-    if 'NN' in np_splits:
-        subs_word = np_splits[np_splits.index('NN')+1][:-3]
-        for i,word in enumerate(out_splits):
-            if word == subs_word and len(out_splits) > i+1 and out_splits[i+1] == '.': 
-                return False
-    return True
 
-
-def get_simple_nps(inp,out,simple_nps):
-    nps_lst = []
+def valid_np_nmod(np_nmod):
+    return np_nmod.count(' PP ') >= 2
+    
+def get_nmods(inp,nmods):
     splits = inp.split(' ')
     brackets = None
     np_found = False
-    np_pos = None
-
-    words = 0
-    pp_found = False
-    pp_brackets = None
 
     for i,word in enumerate(splits):
-        if '//' in word:
-            words+=1
-        if word == 'PP':
-            pp_found = True
-            pp_brackets = 1
-        if pp_found:
-            if word == '(':
-                pp_brackets += 1
-            elif word == ')':
-                pp_brackets -= 1
-            if pp_brackets == 0:
-                pp_found = False
-        # if word == 'NP' and not pp_found and splits[i+2] != 'NNP':
-        if word == 'NP':
+        
+        if not np_found and word == 'PP':
             np_found = True
             np_pos = i
             brackets = 1
-        elif np_found:
+        
+        if  np_found:
             if word == '(':
                 brackets+=1
             elif word == ')':
                 brackets-=1
             if brackets == 0:
                 np = '( ' + ' '.join(splits[np_pos:i+1])
-                # if validate_simple_np(np,inp,out) and words>=2:
-                if validate_simple_np(np,inp,out) and (words==2 or (words==1 and 'NNP' in np)):
-                    np = np[:10] + np[10].lower() + np[11:]
-                    nps_lst.append(np)
                 np_found = False
-    [simple_nps.append(np) for np in nps_lst]
-    return simple_nps
-
-def valid_np_nmod(np_nmod):
-    if ' to//I ' in np_nmod or ' by//I ' in np_nmod or 'NNP' in np_nmod:
-        return False
-    return True
-    
-def get_nmods(inp,nmods):
-    splits = inp.split(' ')
-    brackets = None
-    pp_found = False
-    np_found = False
-    last_np = None
-
-    for i,word in enumerate(splits):
-        
-        if not pp_found and word == 'NP':
-            np_found = True
-            np_pos = i
-            np_brackets = 1
-        
-        if not pp_found and np_found:
-            if word == '(':
-                np_brackets+=1
-            elif word == ')':
-                np_brackets-=1
-            if np_brackets == 0:
-                last_np = '( ' + ' '.join(splits[np_pos:i+1])
-                np_found = False
-
-        if not pp_found and word == 'PP' and splits[i+3].lower() in NMODS_PPS:
-            pp_found = True
-            pp_pos = i
-            brackets = 1
-        if pp_found:
-            if word == '(':
-                brackets+=1
-            elif word == ')':
-                brackets-=1
-            if brackets == 0:
-                nmod = '( ' + ' '.join(splits[pp_pos:i+1])
-                np_nmod = last_np + ' ' + nmod
-                pp_found = False 
-                if valid_np_nmod(np_nmod): 
-                    nmods.append(np_nmod)
-
+                if valid_np_nmod(np):
+                    # np = np[5:]
+                    nmods.append(np)
 
     return nmods
 
@@ -576,7 +504,7 @@ def main():
         for row in rows:
             inp,out,dist = row
             nmods = get_nmods(inp,nmods)
-            simple_nps = get_simple_nps(inp,out,simple_nps)
+            simple_nps = []
         
         simple_nps_dic = {i:simple_nps.count(i) for i in simple_nps}
         for k,v in simple_nps_dic.items(): 
@@ -599,7 +527,7 @@ def main():
         
             rand_int = random.random()
 
-            if rand_int <= 0.5:
+            if rand_int <= -1:
                 if control_1 < 1000:                 
                     nmod = random.choices(population=list(simple_nps_dic.keys()),weights = simple_nps_dic.values(), k =1)[0]
                     control_1 +=1
@@ -630,7 +558,8 @@ def main():
 
             if not valid_nmod(nmod,inp): 
                 continue
-
+            
+            np_subs_noun = get_np(subs_noun,inp)
             new_inp = add_nmod_inp(subs_noun,inp,nmod)
             new_out = add_nmod_out(out,inp,new_inp,nmod,subs_noun) 
 

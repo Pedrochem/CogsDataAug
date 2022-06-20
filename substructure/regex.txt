@@ -1,0 +1,5 @@
+( S ( NP ( DT The//D ) ( NN child//N ) ) ( VP ( VBD appreciated//V ) ( SBAR ( IN that//I ) ( S ( NP ( NNP Emma//N ) ) 
+( VP ( VBD valued//V ) ( SBAR ( IN that//I ) ( S ( NP ( DT a//D ) ( NN cookie//N ) ) ( VP ( VBD was//V ) ( VP ( VBN slid//V ) ) ) ) ) ) ) ) ) ( . . ) )
+
+
+NP \( ([A-Z]|[a-z]| |\/\/|\))*

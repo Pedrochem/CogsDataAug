@@ -1,0 +1,49 @@
+counter pp: 
+( S ( NP ( DT A//D ) ( NN rose//N ) ) ( VP ( VBD was//V ) ( VP ( VBN helped//V ) ( PP ( IN by//I ) ( NP ( DT a//D ) ( NN dog//N ) ) ) ) ) ( . . ) )	"rose ( x _ 1 ) AND help . theme ( x _ 3 , x _ 1 ) AND help . agent ( x _ 3 , x _ 6 ) AND dog ( x _ 6 )"	in_distribution
+
+counter cp:
+( S ( NP ( DT The//D ) ( NN girl//N ) ) ( VP ( VBD needed//V ) ( S ( VP ( TO to//T ) ( VP ( VB cook//V ) ) ) ) ) ( . . ) )	"* girl ( x _ 1 ) ; need . agent ( x _ 2 , x _ 1 ) AND need . xcomp ( x _ 2 , x _ 4 ) AND cook . agent ( x _ 4 , x _ 1 )"	in_distribution
+
+
+
+
+
+
+( S ( NP ( DT The//D ) ( NN child//N ) ) ( VP ( VBD appreciated//V ) ( SBAR ( IN that//I ) ( S ( NP ( NNP Emma//N ) ) 
+
+( VP ( VBD valued//V ) ( SBAR ( IN that//I ) ( S ( NP ( DT a//D ) ( NN cookie//N ) ) ( VP ( VBD was//V ) ( VP ( VBN slid//V ) ) ) ) ) ) ) ) ) ( . . ) )	"* child ( x _ 1 ) ; appreciate . agent ( x _ 2 , x _ 1 ) AND appreciate . ccomp ( x _ 2 , x _ 5 ) AND value . agent ( x _ 5 , Emma ) AND value . ccomp ( x _ 5 , x _ 10 ) AND cookie ( x _ 8 ) AND slide . theme ( x _ 10 , x _ 8 )"	in_distribution
+
+
+
+
+
+
+
+
+
+
+
+( S ( NP ( DT The//D ) ( NN box//N ) ) ( VP ( VBD was//V ) ( VP ( VBN drawn//V ) ( PP ( IN by//I ) ( NP ( DT the//D ) ( NN child//N ) ) ) ) ) ( . . ) )	"* box ( x _ 1 ) ; * child ( x _ 6 ) ; draw . theme ( x _ 3 , x _ 1 ) AND draw . agent ( x _ 3 , x _ 6 )"	in_distribution
+
+( S ( NP ( DT A//D ) ( NN dog//N ) ) ( VP ( VBD loved//V ) ( S ( VP ( TO to//T ) ( VP ( VB cook//V ) ) ) ) ) ( . . ) )	"dog ( x _ 1 ) AND love . agent ( x _ 2 , x _ 1 ) AND love . xcomp ( x _ 2 , x _ 4 ) AND cook . agent ( x _ 4 , x _ 1 )"	in_distribution
+
+( S ( NP ( NNP Liam//N ) ) ( VP ( VBD liked//V ) ( SBAR ( IN that//I ) ( S ( NP ( NNP Lucas//N ) ) ( VP ( VBD cleaned//V ) ) ) ) ) ( . . ) )	"like . agent ( x _ 1 , Liam ) AND like . ccomp ( x _ 1 , x _ 4 ) AND clean . agent ( x _ 4 , Lucas )"	in_distribution
+
+( S ( NP ( NNP Isabella//N ) ) ( VP ( VBD forwarded//V ) ( NP ( NP ( DT a//D ) ( NN box//N ) ) ( PP ( IN on//I ) ( NP ( DT a//D ) ( NN tree//N ) ) ) ) ( PP ( IN to//I ) ( NP ( NNP Emma//N ) ) ) ) ( . . ) )	"forward . agent ( x _ 1 , Isabella ) AND forward . theme ( x _ 1 , x _ 3 ) AND forward . recipient ( x _ 1 , Emma ) AND box ( x _ 3 ) AND box . nmod . on ( x _ 3 , x _ 6 ) AND tree ( x _ 6 )"	in_distribution
+
+
+
+
+( S ( NP ( NNP Elizabeth//N ) ) ( VP ( VBD was//V ) ( VP ( VBN given//V ) ( NP ( DT a//D ) ( NN towel//N ) ) ( PP ( IN beside//I ) ( NP ( NP ( DT the//D ) ( NN book//N ) ) ( PP ( IN in//I ) ( NP ( DT the//D ) ( NN can//N ) ) ) ) ) ( PP ( IN by//I ) ( NP ( DT the//D ) ( NN girl//N ) ) ) ) ) ( . . ) )	"* book ( x _ 7 ) ; * can ( x _ 10 ) ; * girl ( x _ 13 ) ; give . recipient ( x _ 2 , Elizabeth ) AND give . theme ( x _ 2 , x _ 4 ) AND give . agent ( x _ 2 , x _ 13 ) AND towel ( x _ 4 ) AND towel . nmod . beside ( x _ 4 , x _ 7 ) AND book . nmod . in ( x _ 7 , x _ 10 )"	in_distribution
+
+
+* child { x _ 1 } ; appreciate . agent { x _ 2 , x _ 1 } AND appreciate . ccomp { x _ 2 , x _ 5 } AND value . agent { x _ 5 , Emma } AND value . ccomp { x _ 5 , x _ 10 } AND cookie { x _ 8 } AND slide . theme { x _ 10 , x _ 8 }"	in_distribution
+
+
+S
+SBAR
+NP
+PP
+VP
+
+
