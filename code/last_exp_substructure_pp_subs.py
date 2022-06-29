@@ -44,21 +44,12 @@ def get_final_inp(inp):
     return final_inp
 
 def write_new_row(inp,out,dist,or_inp,or_out,nmod,subus_noun):
-    # or_inp = get_final_inp(or_inp).strip()
-    # or_inp_splits = or_inp.split(' ')
-    # for i,w in enumerate(or_inp_splits):
-    #     if w == subus_noun[:-3]:
-    #         or_inp_splits[i] = '|'+w+'|'
-    # or_inp = ' '.join(or_inp_splits)
-
-    # nmod = get_final_inp(nmod)
+  
 
     final_inp = get_final_inp(inp)
     final_out = final_clean_output(out)
 
-    # nmod = nmod.strip()
-    # or_inp = or_inp.strip()
-
+  
     final_inp = final_inp.strip()
     if dist != 'primitive':
         final_inp = final_inp[0].upper() + final_inp[1:]
@@ -67,18 +58,16 @@ def write_new_row(inp,out,dist,or_inp,or_out,nmod,subus_noun):
 
     final_row = '\t'.join((final_inp,final_out,dist))
 
-
-    # OUT_FILE.write(or_inp+'\t'+or_out+'\n')
-    # OUT_FILE.write(nmod+'\n')
-    # OUT_FILE.write('-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n')
-    
     OUT_FILE.write(final_row+'\n')
-    # OUT_FILE.write('\n==================================================================================================================================================================================================================================================================================================================================================================\n')
 
 
 
 def valid_np_nmod(np_nmod):
-    return np_nmod.count(' PP ') >= 2
+    if np_nmod.count(' PP ') >= 2:
+        return True
+    if 'to//i' in np_nmod:
+        return False
+    
     
 def get_nmods(inp,nmods):
     splits = inp.split(' ')
@@ -167,51 +156,37 @@ def add_nmod_inp(noun,inp,nmod):
     return new_inp
 
 
-def get_possible_noun(inp,out,pp_rest):
-    out_splits = out.split(' ')
+def valid_pp(pp):
+    if pp.count('PP') >=2:
+        return False
+    if 'by//I' in pp or 'to//I' in pp:
+        return False
+    return True
+
+def get_possible_pp(inp):
     inp_splits = inp.split(' ')
-    verb_found = not AFTER_V
     pp_found = False
     pp_brackets = None
-    nouns = []
-   
+    last_n = ''
     for i,word in enumerate(inp_splits):
+        if '//N' in word and not pp_found:
+            last_n = word
         if word == 'PP':
             pp_found = True
             pp_brackets = 1
+            pp_pos = i
         if pp_found:
             if word == '(':
                 pp_brackets += 1
             elif word == ')':
                 pp_brackets -= 1
             if pp_brackets == 0:
+                pp = '( ' + ' '.join(inp_splits[pp_pos:i+1])
                 pp_found = False
+                if valid_pp(pp):
+                    return pp,last_n
+    return None,None
 
-        if word == 'VP':
-            verb_found = True
-
-        if not verb_found or (pp_found and pp_rest): 
-            continue
-
-        if '//N' in word and inp_splits[i-1] == 'NN':
-            nouns.append(word)
-    res = nouns.copy()
-
-    for i,word in enumerate(out_splits):
-        
-        if word == 'nmod':
-            pos1 = out_splits[i+6]
-            pos2 = out_splits[i+10]
-
-            for n in nouns:
-                if get_pos(n,inp) in (pos1,pos2) and n in res:
-                    res.remove(n)
-    
-    
-    if len(res) != 0:
-        return random.choice(res)
-    else:
-        return None
 
 
 
@@ -307,49 +282,52 @@ def get_nmod_out(nmod,new_inp):
     return det_out,nmod_out,det_cut_ind,cut_ind,n_words
 
 
-def remove_out(out,inp,new_inp,subs_noun,nmod):
-    out_splits = out.split(' ')
-    subs_noun_pos = get_pos(subs_noun,inp)
-    
-    if out_splits[0] != '*':
-        out_splits = ['BEG'] + out_splits
+def remove_out(subs_pp,out,last_n):
+    det_out = out.rsplit(';', 1)[0]
+    if len(det_out) != len(out):
+        out_splits = out.rsplit(';', 1)[1].split(' ')
+    else:
+        out_splits = out.split(' ')
+        removed_det_out = ''
 
-    new_out_splits = out_splits.copy()
+    det_out_splits = det_out.split(' ')
+    p_det = -1
+    pp_splits = subs_pp.split(' ')
+    removed_det = False
+    pos_nmod = -1
     
-    nmod_noun_pos = None
-    for w in nmod.split(' '):
-        w = w.lower()
-        if '//n' in w :
-            nmod_noun_pos = get_pos(w,new_inp)
+    if ';' in out:
+        for i,w in enumerate(det_out_splits):
+            if w+'//N' in subs_pp:
+                p_det = i
+                break
+        if p_det != -1:
+            det_out_splits = det_out_splits[:i-1] + det_out_splits[i+7:]
+            removed_det = True
+
+        removed_det_out = ' '.join(det_out_splits)
+        
+
+    for i,w in enumerate(out_splits):
+        if w == 'nmod' and out_splits[i-2] == last_n[:-3]:
+            pos_nmod = i
             break
-    if nmod_noun_pos is None:
-        return None
 
-    for i,word in enumerate(out_splits):
-        if word == '*' and len(out_splits[i:]) >= 5 and out_splits[i+5].isdigit() and out_splits[i+5] == subs_noun_pos:
-            new_out_splits = new_out_splits[:i] + new_out_splits[i+8:]
-
-        if word == 'AND' and (len(out_splits[i:]) >= 5 and out_splits[i+5].isdigit() and out_splits[i+5] == subs_noun_pos):
-            new_out_splits = new_out_splits[:i] + new_out_splits[i+7:]
-        
-        if word == ';' and (len(out_splits[i:]) >= 5 and out_splits[i+5].isdigit() and out_splits[i+5] == subs_noun_pos):
-            new_out_splits = new_out_splits[:i+1] + new_out_splits[i+7:]
-        
-        if word == 'BEG' and (len(out_splits[i:]) >= 5 and out_splits[i+5].isdigit() and out_splits[i+5] == subs_noun_pos):
-            new_out_splits = new_out_splits[:i] + new_out_splits[i+7:]
-        
+    if removed_det:
+        out_splits = out_splits[:pos_nmod] + ['??'] + out_splits[pos_nmod+12:]
+    else:
+        out_splits = out_splits[:pos_nmod] + ['??'] + out_splits[pos_nmod+19:]
+    
+    
+    
+    
+    
+    
+    removed_comp = ' '.join(out_splits)
 
 
-    if new_out_splits[0] == 'BEG':
-        new_out_splits = new_out_splits[1:]
 
-       
-    for i,word in enumerate(new_out_splits):
-        word = word.lower()
-        if word == subs_noun_pos or word == subs_noun[:-3]:
-            new_out_splits[i] = nmod_noun_pos
-        
-    return ' '.join(new_out_splits)
+    return removed_det_out,removed_comp
 
 
 def get_n_words(noun,inp):
@@ -368,135 +346,107 @@ def get_noun(nmod):
             break
     return noun
 
-def add_nmod_out(out,inp,new_inp,nmod,subs_noun):
-  
-    removed_out = remove_out(out,inp,new_inp,subs_noun,nmod)
+
+def get_out_pp(pp,new_inp,last_n):
+    pp_splits = pp.split(' ')
+    is_det = False
+    det_out = ''
+    dets = []
+    comp = ''
+    pos_before = get_pos(last_n,new_inp)
+    for i,w in enumerate(pp_splits):
+        if '//' not in w:
+            continue
+        if is_det:
+            det_out += '* '+w[:-3]+' ( x _ '+get_pos(w,new_inp) +') ; '
+            dets.append(w)
+
+        if 'the//D' in w:
+            is_det = True
+        else:
+            is_det = False
+    
+    for i,w in enumerate(pp_splits):
+        if '//' not in w:
+            continue
+        if 'on//I' in w:
+            nmod = 'on'
+        elif 'in//I' in w:
+            nmod = 'in'
+        elif 'beside//I' in w:
+            nmod = 'beside'
         
-    if removed_out is None: return None
-    
-    if 'NNP' in nmod:
-        nmod_noun = get_noun(nmod)
-        subs_nmod_pos = get_pos(nmod_noun+'//N',new_inp)
-        final_out = removed_out.replace('x _ '+subs_nmod_pos,nmod_noun)
-        if final_out[:3] == 'AND':
-            final_out = final_out[3:]
-        final_out = final_out.replace('; AND',';')
-
-        np_nwords = get_n_words(subs_noun,inp)
-        nmod_nwords = get_n_words(nmod,new_inp)
-
-        splits = final_out.split(' ')
+        if '//N' in w:
+            aux_pos = get_pos(w,new_inp)
+            if w in dets:
+                comp+='nmod . '+nmod+' ( x _ '+pos_before+' , x _ '+aux_pos+' ) AND'
+            else:
+                comp+='nmod . '+nmod+' ( x _ '+pos_before+' , x _ '+aux_pos+' ) AND '+w[:-3]+' ( x _ '+ aux_pos+' ) AND '
+            pos_before = aux_pos
+            
+    comp = comp[:-4]
+    det_out = det_out[:-1]
+    return det_out,comp
 
 
-        if nmod_nwords == 1 and np_nwords == 2:
-            for i,word in enumerate(splits):
-                if word.isdigit() and int(word) > int(subs_nmod_pos):
-                    splits[i] = str(int(word)-1) 
-        
-            final_out = ' '.join(splits)
 
-        elif nmod_nwords != np_nwords:
-            return None
-        return final_out
-    
+def fix_removed_det(new_inp,removed_det):
+    removed_det_splits = removed_det.split(' ')
+    for i,w in enumerate(removed_det_splits):
+        if w.isdigit():
+            w_pos = get_pos(removed_det_splits[i-4]+'//N',new_inp)
+            removed_det_splits[i] = w_pos
+    return ' '.join(removed_det_splits)
 
-    det_out,nmod_out,det_cut_ind,cut_ind,n_words = get_nmod_out(nmod,new_inp)
-    
-    if nmod_out is None:
-        return None
+def get_final_det(pp_det,removed_det):
+    removed_det_splits = removed_det.split(' ')
+    pp_det_splits = pp_det.split(' ')
+    pp_det_value = None
+    for w in pp_det_splits:
+        if w.isdigit():
+            pp_det_value = int(w)
 
     cutted = False
-    det_cut_pos = 0
-    cut_pos = 0
-    out_splits = removed_out.split(' ')
-    subs_noun_n_words = get_n_words(subs_noun,inp)
-    
-    if out_splits[0] != '*':
-        out_splits = ['AND'] + out_splits
 
-    for i,word in enumerate(out_splits):
-        if word == '*' and len(out_splits[i:]) >= 5 and out_splits[i+5].isdigit() and int(out_splits[i+5]) < det_cut_ind:
-            det_cut_pos = i+8
-        if word == 'AND' and (len(out_splits[i:]) >= 7 and out_splits[i+5].isdigit() and int(out_splits[i+5]) < cut_ind):
-            cut_pos = i+7
+    for i,w in enumerate(removed_det_splits):
+        if w.isdigit() and w>pp_det_value:
+            final_det = removed_det_splits[:i-5] + [pp_det] + [removed_det_splits[i-5:]]
+            final_det = ' '.join(final_det)
             cutted = True
-        if word == 'AND' and len(out_splits[i:])>=11 and out_splits[i+7].isdigit() and int(out_splits[i+7]) < cut_ind:
-            cut_pos = i+13
-            cutted = True
-        if word == 'AND' and len(out_splits[i:])>=15 and out_splits[i+9].isdigit() and int(out_splits[i+9]) < cut_ind:
-            cut_pos = i+15
-            cutted = True
+    if not cutted:
+        final_det = removed_det + pp_det
+    return final_det
 
-        if word.isdigit() and int(word) > cut_ind:
-            out_splits[i] = str(int(out_splits[i])+n_words-subs_noun_n_words)
 
-    if out_splits[0] == 'AND':
-        out_splits = out_splits[1:]
-        if cut_pos != 0:
-            cut_pos = cut_pos-1
+
+
+def add_nmod_out(out,inp,new_inp,pp,subs_pp,last_n):
+    pp_det, pp_comp = get_out_pp(pp,new_inp,last_n)
+    removed_det,removed_comp = remove_out(subs_pp,out,last_n) 
+
+    if len(removed_det) != 0:
+        removed_det = fix_removed_det(new_inp,removed_det)
+        if len(pp_det) != 0:
+            final_det = get_final_det(pp_det,removed_det)
+        else:
+            final_det = removed_det
+    else:
+        final_det = pp_det
     
-    end_det_pos = 0
-    for i,word in enumerate(out_splits):
-        if word == ';':
-            end_det_pos = i+1
+    final_comp = removed_comp.replace('??',pp_comp)
+    i=0
     
-    if end_det_pos > cut_pos:
-        cut_pos = end_det_pos
-
-    if end_det_pos > det_cut_pos:
-        new_det_out_beg = ' '.join(out_splits[:det_cut_pos])
-        new_det_out_end = ' '.join(out_splits[det_cut_pos:end_det_pos])
-        final_det_out = new_det_out_beg + ' ' + det_out + ' ' + new_det_out_end
-
-    else: 
-        new_det_out_beg = ' '.join(out_splits[:det_cut_pos])
-        final_det_out = new_det_out_beg + ' ' + det_out
-
-
-    nmod_out = nmod_out.strip()
-    splits = nmod_out.split(' ')
-    if splits[0] == 'AND' and cut_pos == end_det_pos:
-        splits = splits[1:]
-        nmod_out = ' '.join(splits)
-
-    new_beg_out = ' '.join(out_splits[end_det_pos:cut_pos])
-    new_compl_out = ' '.join(out_splits[cut_pos:])
-    new_compl_out = new_compl_out.strip()
-    if splits[-1] != 'AND' and len(new_compl_out) > 0 and new_compl_out.split(' ')[0] != 'AND':
-        nmod_out = nmod_out + ' AND'
-
     
-    new_nmod_out = new_beg_out + ' ' + nmod_out + ' ' + new_compl_out
-    new_nmod_out = new_nmod_out.strip()
-    
-    if new_nmod_out[:4] == 'AND ':
-        new_nmod_out = new_nmod_out[4:]
-    final_out = final_det_out.strip() + ' ' + new_nmod_out.strip()
-   
-    final_out = final_out.replace('  ',' ')
-    return final_out
 
 
 def main():
     with open(IN_FILE) as f:
         read_tsv = csv.reader(f, delimiter='\t')
         res = []
-        dic = []
-        test = {}
-        test2 = {}
-
-        
-        control_1 = 0
-        control_2 = 0
-
-    
-        simple_nps = []
-
         rows = list(read_tsv)
         count = 0
         length = len(rows)
-        
-
+    
         # DELETE LATER
         random.seed(1) 
         # DELETE LATER
@@ -504,64 +454,21 @@ def main():
         for row in rows:
             inp,out,dist = row
             nmods = get_nmods(inp,nmods)
-            simple_nps = []
-        
-        simple_nps_dic = {i:simple_nps.count(i) for i in simple_nps}
-        for k,v in simple_nps_dic.items(): 
-            simple_nps_dic[k] = 1/v
-        
-        nmods_dic = {i:nmods.count(i) for i in nmods}
-        for k,v in nmods_dic.items():
-            nmods_dic[k] = 1/v
-
-        set_1 = set(simple_nps)
-        set_2 = set(nmods)
-
-        set_1 = list(set_1)
-        set_2 = list(set_2)
+            
 
         while (count<MAX_ADDED_LINES):
             inp,out,dist = rows[random.randint(0,length-1)]
             if not valid(inp,dist): 
                 continue
-        
-            rand_int = random.random()
-
-            if rand_int <= -1:
-                if control_1 < 1000:                 
-                    nmod = random.choices(population=list(simple_nps_dic.keys()),weights = simple_nps_dic.values(), k =1)[0]
-                    control_1 +=1
-                else:
-                    nmod = random.choice(set_1)
-               
-                if nmod in test:
-                    test[nmod] += 1
-                else:
-                    test[nmod] = 1
-                subs_noun = get_possible_noun(inp,out,pp_rest=True)
-
-            else:
-                if control_2 < 1000:
-                    nmod = random.choices(population=list(nmods_dic.keys()),weights = nmods_dic.values(), k =1)[0]
-                    control_2 +=1
-                else:
-                    nmod = random.choice(set_2)
-                if nmod in test2:
-                    test2[nmod] += 1
-                else:
-                    test2[nmod] = 1
-                subs_noun = get_possible_noun(inp,out,pp_rest=False)
-                
             
-            if not subs_noun: continue
+            nmod = random.choice(nmods)
+
+            subs_pp,last_n = get_possible_pp(inp)         
+            if not subs_pp: continue
 
 
-            if not valid_nmod(nmod,inp): 
-                continue
-            
-            np_subs_noun = get_np(subs_noun,inp)
-            new_inp = add_nmod_inp(subs_noun,inp,nmod)
-            new_out = add_nmod_out(out,inp,new_inp,nmod,subs_noun) 
+            new_inp = inp.replace(subs_pp,nmod)
+            new_out = add_nmod_out(out,inp,new_inp,nmod,subs_pp,last_n) 
 
             if new_out is None:
                 continue

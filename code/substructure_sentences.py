@@ -16,7 +16,7 @@ NMODS_PPS = ['in//i','beside//i','on//i']
 
 AFTER_V = False
 
-OUT_FILE = open('results/new_substructure/subs_pps_0.2_20kadd.tsv', 'w')
+OUT_FILE = open('results/new_substructure/subs_sentences_10k.tsv', 'w')
 # OUT_FILE = open('testing/substrucutre_both_03_with_nnp.tsv', 'w')
 
 
@@ -583,7 +583,7 @@ def main():
         
             rand_int = random.random()
 
-            if rand_int <= 0.2:
+            if rand_int <= 0.5:
                 if control_1 < 1000:                 
                     nmod = random.choices(population=list(simple_nps_dic.keys()),weights = simple_nps_dic.values(), k =1)[0]
                     control_1 +=1
