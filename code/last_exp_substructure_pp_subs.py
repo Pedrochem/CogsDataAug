@@ -168,10 +168,12 @@ def get_possible_pp(inp):
     pp_found = False
     pp_brackets = None
     last_n = ''
+    res = None, None
     for i,word in enumerate(inp_splits):
-        if '//N' in word and not pp_found:
+        if '//N' in word:
             last_n = word
         if word == 'PP':
+            pp_noun = last_n
             pp_found = True
             pp_brackets = 1
             pp_pos = i
@@ -184,8 +186,9 @@ def get_possible_pp(inp):
                 pp = '( ' + ' '.join(inp_splits[pp_pos:i+1])
                 pp_found = False
                 if valid_pp(pp):
-                    return pp,last_n
-    return None,None
+                    res = pp,pp_noun
+                    pp_found = False
+    return res
 
 
 
@@ -282,10 +285,12 @@ def get_nmod_out(nmod,new_inp):
     return det_out,nmod_out,det_cut_ind,cut_ind,n_words
 
 
-def remove_out(subs_pp,out,last_n):
+def remove_out(subs_pp,out,last_n,new_inp):
     det_out = out.rsplit(';', 1)[0]
     if len(det_out) != len(out):
         out_splits = out.rsplit(';', 1)[1].split(' ')
+        det_out +=';'
+        
     else:
         out_splits = out.split(' ')
         removed_det_out = ''
@@ -298,7 +303,7 @@ def remove_out(subs_pp,out,last_n):
     
     if ';' in out:
         for i,w in enumerate(det_out_splits):
-            if w+'//N' in subs_pp:
+            if ' '+w+'//N' in subs_pp:
                 p_det = i
                 break
         if p_det != -1:
@@ -311,7 +316,6 @@ def remove_out(subs_pp,out,last_n):
     for i,w in enumerate(out_splits):
         if w == 'nmod' and out_splits[i-2] == last_n[:-3]:
             pos_nmod = i
-            break
 
     if removed_det:
         out_splits = out_splits[:pos_nmod] + ['??'] + out_splits[pos_nmod+12:]
@@ -319,9 +323,14 @@ def remove_out(subs_pp,out,last_n):
         out_splits = out_splits[:pos_nmod] + ['??'] + out_splits[pos_nmod+19:]
     
     
-    
-    
-    
+    found_q = False
+    for i,w in enumerate(out_splits):
+        if w == '??': 
+            found_q = True
+        if found_q:
+            if w.isdigit():
+                out_splits[i] = get_pos(out_splits[i-4]+'//N',new_inp)
+
     
     removed_comp = ' '.join(out_splits)
 
@@ -358,7 +367,7 @@ def get_out_pp(pp,new_inp,last_n):
         if '//' not in w:
             continue
         if is_det:
-            det_out += '* '+w[:-3]+' ( x _ '+get_pos(w,new_inp) +') ; '
+            det_out += '* '+w[:-3]+' ( x _ '+get_pos(w,new_inp) +' ) ; '
             dets.append(w)
 
         if 'the//D' in w:
@@ -379,7 +388,7 @@ def get_out_pp(pp,new_inp,last_n):
         if '//N' in w:
             aux_pos = get_pos(w,new_inp)
             if w in dets:
-                comp+='nmod . '+nmod+' ( x _ '+pos_before+' , x _ '+aux_pos+' ) AND'
+                comp+='nmod . '+nmod+' ( x _ '+pos_before+' , x _ '+aux_pos+' ) AND '
             else:
                 comp+='nmod . '+nmod+' ( x _ '+pos_before+' , x _ '+aux_pos+' ) AND '+w[:-3]+' ( x _ '+ aux_pos+' ) AND '
             pos_before = aux_pos
@@ -405,24 +414,26 @@ def get_final_det(pp_det,removed_det):
     for w in pp_det_splits:
         if w.isdigit():
             pp_det_value = int(w)
+            break
 
     cutted = False
 
     for i,w in enumerate(removed_det_splits):
-        if w.isdigit() and w>pp_det_value:
-            final_det = removed_det_splits[:i-5] + [pp_det] + [removed_det_splits[i-5:]]
+        if w.isdigit() and int(w)>pp_det_value:
+            final_det = removed_det_splits[:i-5] + [pp_det] + removed_det_splits[i-5:]
             final_det = ' '.join(final_det)
             cutted = True
     if not cutted:
-        final_det = removed_det + pp_det
+        final_det = removed_det.strip() + ' ' + pp_det.strip()
     return final_det
 
 
 
 
 def add_nmod_out(out,inp,new_inp,pp,subs_pp,last_n):
-    pp_det, pp_comp = get_out_pp(pp,new_inp,last_n)
-    removed_det,removed_comp = remove_out(subs_pp,out,last_n) 
+    pp_det, pp_comp = get_out_pp(pp,new_inp,last_n) 
+    # fix index on nmods of nouns that are in the det
+    removed_det,removed_comp = remove_out(subs_pp,out,last_n,new_inp) 
 
     if len(removed_det) != 0:
         removed_det = fix_removed_det(new_inp,removed_det)
